@@ -9,7 +9,9 @@ import { propertyTypes } from 'utils/enum/enums';
 
 // Agent Schema
 @ObjectType()
-@Schema()
+@Schema({
+  timestamps: true,
+})
 export class Property extends Document {
 
   //Document id
@@ -161,6 +163,9 @@ export class Property extends Document {
   @Field(() => Boolean) 
   @Prop({ type: Boolean})
   listed: boolean;
+
+  @Field(() => Date)  // Make createdAt nullable
+  createdAt: Date;
 
   
   

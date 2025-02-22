@@ -4,10 +4,11 @@ import { ResponseDto } from 'src/dto/response.dto';
 import { AddPropertyDto } from './input/addPropertyInput';
 import { InjectModel } from '@nestjs/mongoose';
 import { Property } from './schema/property.schema';
-import { Model } from 'mongoose';
+import mongoose, { Model } from 'mongoose';
 import { userID } from 'utils/mongoId/deScopeIdForrmater';
 import { PropertyFilterInput } from './input/propertyFilterInput';
 import * as xlsx from 'xlsx';
+import { UpdatePropertyDto } from './input/updatePropertyInput';
 
 @Injectable()
 export class PropertyService {
@@ -35,6 +36,34 @@ export class PropertyService {
     }
   }
 
+  async deleteSingleRecord(id: string): Promise<ResponseDto> {
+    try {
+      const result = await this.propertyModel.findByIdAndDelete(id);
+      
+      if (!result) {
+        return {
+          success: false,
+          statusCode: HttpStatusCode.NotFound,
+          msg: "Record not found"
+        };
+      }
+  
+      return {
+        success: true,
+        statusCode: HttpStatusCode.Ok,
+        msg: "Record deleted successfully"
+      };
+    } catch (e) {
+      console.error(e);
+      return {
+        success: false,
+        statusCode: HttpStatusCode.InternalServerError,
+        msg: "Failed to delete record"
+      };
+    }
+  }
+  
+
 
   async getProperties(
     filter?: PropertyFilterInput,
@@ -43,20 +72,81 @@ export class PropertyService {
     sortBy: string = 'createdAt',
     sortOrder: string = 'desc'
   ): Promise<Property[]> {
-    // Convert filter object to MongoDB query
     const query: any = {};
+  
     if (filter) {
       Object.keys(filter).forEach((key) => {
-        if (filter[key] !== undefined) {
-          // Enable text search on string fields
-          query[key] = { $regex: new RegExp(filter[key], 'i') };
+
+        if (
+          filter[key] !== undefined &&
+          key !== 'startDate' &&
+          key !== 'endDate' &&
+          key !== 'primaryPriceRange' &&
+          key !== 'resalePriceRange' &&
+          key !== 'rentRange' &&
+          key !== 'bedrooms'
+        ) {
+          if (key === '_id') {
+            query[key] = new mongoose.Types.ObjectId(filter[key]);
+          } else if (typeof filter[key] === 'string') {
+            query[key] = { $regex: new RegExp(filter[key], 'i') };
+          } else {
+            query[key] = filter[key];
+          }
         }
       });
+  
+      // Date range filtering
+      if (filter.startDate || filter.endDate) {
+        query.createdAt = {};
+        if (filter.startDate) query.createdAt.$gte = new Date(filter.startDate);
+        if (filter.endDate) query.createdAt.$lte = new Date(filter.endDate);
+      }
+  
+      // Price range filtering
+      if (filter.primaryPriceRange) {
+        query.primaryPrice = {};
+        if (filter.primaryPriceRange.min !== undefined)
+          query.primaryPrice.$gte = filter.primaryPriceRange.min;
+        if (filter.primaryPriceRange.max !== undefined)
+          query.primaryPrice.$lte = filter.primaryPriceRange.max;
+      }
+  
+      if (filter.resalePriceRange) {
+        query.resalePrice = {};
+        if (filter.resalePriceRange.min !== undefined)
+          query.resalePrice.$gte = filter.resalePriceRange.min;
+        if (filter.resalePriceRange.max !== undefined)
+          query.resalePrice.$lte = filter.resalePriceRange.max;
+      }
+
+      if (filter.bedrooms) {
+        query.bedrooms = {};
+        if (filter.bedrooms.min !== undefined) {
+          query.bedrooms.$gte = filter.bedrooms.min;
+        }
+        if (filter.bedrooms.max !== undefined) {
+          query.bedrooms.$lte = filter.bedrooms.max;
+        }
+      }
+
+      if (filter.unitView && filter.unitView.length > 0) {
+        query.unitView = {
+          $in: filter.unitView.map(tag => new RegExp(tag, "i")), // Case-insensitive regex match
+        };
+      }
+  
+      if (filter.rentRange) {
+        query.Rent = {};
+        if (filter.rentRange.min !== undefined)
+          query.Rent.$gte = filter.rentRange.min;
+        if (filter.rentRange.max !== undefined)
+          query.Rent.$lte = filter.rentRange.max;
+      }
     }
-
-    // Sorting direction
+  
     const sortDirection = sortOrder === 'asc' ? 1 : -1;
-
+  
     return this.propertyModel
       .find(query)
       .sort({ [sortBy]: sortDirection })
@@ -64,13 +154,51 @@ export class PropertyService {
       .limit(limit)
       .exec();
   }
-
+  
+  
   async getSingleRecord(docId: string): Promise<Property> {
     const property = await this.propertyModel.findById(docId).exec();
     if (!property) {
       throw new NotFoundException('Property not found');
     }
     return property;
+  }
+
+  async updateProperty(data: UpdatePropertyDto): Promise<any> {
+    try {
+      const { _id, ...updateFields } = data;
+
+      const updatedFieldData = {...updateFields,userId:userID(updateFields.clerkId)}
+
+      const updatedProperty = await this.propertyModel.findByIdAndUpdate(_id, updatedFieldData, {
+        new: true, // Return updated document
+        runValidators: true, // Ensure validation is applied
+      });
+
+      if (!updatedProperty) {
+        return {
+          success: false,
+          statusCode: HttpStatusCode.NotFound,
+          msg: 'Property not found',
+        }
+      }
+
+      return {
+        success: true,
+        statusCode: HttpStatusCode.Ok,
+        msg: 'Property updated successfully',
+        data: updatedProperty,
+      };
+
+    } 
+    catch (error) {
+
+      return {
+        success: false,
+        statusCode: HttpStatusCode.InternalServerError,
+        msg: 'Failed to update property',
+      }
+    }
   }
 
 

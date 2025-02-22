@@ -3,7 +3,11 @@ import { Field, InputType } from '@nestjs/graphql';
 import { propertyTypes } from 'utils/enum/enums';
 
 @InputType()
-export class AddPropertyDto {
+export class UpdatePropertyDto {
+
+  @Field(() => String)
+  @IsMongoId()
+  _id: string; 
 
   @Field(() => String)
   @IsString()
