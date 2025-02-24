@@ -20,6 +20,22 @@ export const multerOptions = {
     }),
   };
 
+  export const multerOptionsForXlxs = {
+    storage: diskStorage({
+      destination: (req, file, callback) => {
+        if (!fs.existsSync(uploadsPath)) {
+          fs.mkdirSync(uploadsPath, { recursive: true });
+        }
+        callback(null, uploadsPath);
+      },
+      filename: (req, file, callback) => {
+        const uniqueSuffix = Date.now() + '-' + file.originalname;
+        callback(null, uniqueSuffix);
+      },
+    }),
+  };
+  
+
 export interface UploadedFileType {
     fieldname: string;
     originalname: string;

@@ -4,4 +4,8 @@ export enum propertyTypes  {
     Office ="Office",
     Shop = "Shop",
     Nursery = "Nursery",
+    Villa = "Villa",
+    StackHome = "Stack Home",
+    Gymnasium = "Gymnasium",
+    // - = "-"
   }

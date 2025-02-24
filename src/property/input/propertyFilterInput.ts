@@ -16,7 +16,7 @@ export class PropertyFilterInput {
   @Field({ nullable: true }) projectName?: string;
   @Field({ nullable: true }) propertyType?: string;
   @Field({ nullable: true }) projectLocation?: string;
-  @Field({ nullable: true }) unitNumber?: number;
+  @Field({ nullable: true }) unitNumber?: string;
   @Field({ nullable: true }) unitLocation?: string;
   @Field({ nullable: true }) vacancyStatus?: string;
   @Field({ nullable: true }) listed?: boolean;

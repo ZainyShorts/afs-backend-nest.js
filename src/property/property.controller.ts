@@ -1,8 +1,10 @@
-import { Body, Controller, Delete, Param, Post, Put } from '@nestjs/common';
+import { Body, Controller, Delete, Param, Post, Put, UploadedFile, UseInterceptors } from '@nestjs/common';
 import { AddPropertyDto } from './input/addPropertyInput';
 import { PropertyService } from './property.service';
 import { ResponseDto } from 'src/dto/response.dto';
 import { UpdatePropertyDto } from './input/updatePropertyInput';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { multerOptionsForXlxs, UploadedFileType } from 'utils/multer/multer.config';
 
 @Controller('property')
 export class PropertyController {
@@ -23,6 +25,12 @@ export class PropertyController {
     @Put("updateSingleRecord")
     async updateProperty(@Body() updatePropertyDto: UpdatePropertyDto) {
         return this.prropertyService.updateProperty(updatePropertyDto);
+    }
+
+    @Post('updateBulkRecord')
+    @UseInterceptors(FileInterceptor('file', multerOptionsForXlxs))
+    async uploadFile(@UploadedFile() file: UploadedFileType,@Body() data:any):Promise<ResponseDto> {
+        return this.prropertyService.readXlsxAndInsert(file.path,data.clerkId);
     }
 
 

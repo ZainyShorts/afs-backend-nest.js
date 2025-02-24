@@ -17,6 +17,7 @@ export class PropertyResolver {
     @Args('sortBy', { type: () => String, nullable: true, defaultValue: 'createdAt' }) sortBy?: string,
     @Args('sortOrder', { type: () => String, nullable: true, defaultValue: 'desc' }) sortOrder?: string
   ): Promise<Property[]> {
+    console.log(filter, page, limit, sortBy, sortOrder)
     return this.propertyService.getProperties(filter, page, limit, sortBy, sortOrder);
   }
 

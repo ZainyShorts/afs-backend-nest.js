@@ -15,153 +15,155 @@ import { propertyTypes } from 'utils/enum/enums';
 export class Property extends Document {
 
   //Document id
-  @Field(() => String) 
+  @Field(() => String ,{ nullable: false }) 
   _id: Types.ObjectId;
+
+  //   @Field(() => Document)
+  //   @Prop({ type: Types.ObjectId, ref: 'Document' }) 
+  //   documents: Types.ObjectId;
+  
+  //   @Field(() => Agent)
+  //   @Prop({ type: Types.ObjectId, ref: 'Agent' }) 
+  //   agent: Types.ObjectId;
+  
+  
+  //   @Field(() => Maintenance)
+  //   @Prop({ type: Types.ObjectId, ref: 'Maintenance' }) 
+  //   maintenance: Types.ObjectId;
+  
+  //   @Field(() => Reviews)
+  //   @Prop({ type: Types.ObjectId, ref: 'Reviews' }) 
+  //   reviews: Types.ObjectId;   
+  
+  
+  //   @Field(() => Transactions)
+  //   @Prop({ type: Types.ObjectId, ref: 'Transactions' }) 
+  //   transactions: Types.ObjectId;  
+  
+  // @Field(() => Leads)
+  //   @Prop({ type: Types.ObjectId, ref: 'Leads' }) 
+  //   leads: Types.ObjectId;
+  
+  
+  // @Field(() => Appointment)
+  //   @Prop({ type: Types.ObjectId, ref: 'Appointment' }) 
+  //   appointment: Types.ObjectId;
+  
+  // @Field(() => Invoice)
+  //   @Prop({ type: Types.ObjectId, ref: 'Invoice' }) 
+  //   invoice: Types.ObjectId;
+  
+  // @Field(() => Client)
+  //   @Prop({ type: Types.ObjectId, ref: 'Client' }) 
+  //   client: Types.ObjectId;
+  
+  // @Field(() => Contract)
+  //   @Prop({ type: Types.ObjectId, ref: 'Contract' }) 
+  //   contract: Types.ObjectId;
 
   //Reference other  documents
   @Field(() => User)
   @Prop({ type: Types.ObjectId, ref: 'User' }) 
   userId: Types.ObjectId;
 
-//   @Field(() => Document)
-//   @Prop({ type: Types.ObjectId, ref: 'Document' }) 
-//   documents: Types.ObjectId;
-
-//   @Field(() => Agent)
-//   @Prop({ type: Types.ObjectId, ref: 'Agent' }) 
-//   agent: Types.ObjectId;
-
-
-//   @Field(() => Maintenance)
-//   @Prop({ type: Types.ObjectId, ref: 'Maintenance' }) 
-//   maintenance: Types.ObjectId;
-
-//   @Field(() => Reviews)
-//   @Prop({ type: Types.ObjectId, ref: 'Reviews' }) 
-//   reviews: Types.ObjectId;   
-
-
-//   @Field(() => Transactions)
-//   @Prop({ type: Types.ObjectId, ref: 'Transactions' }) 
-//   transactions: Types.ObjectId;  
-
-// @Field(() => Leads)
-//   @Prop({ type: Types.ObjectId, ref: 'Leads' }) 
-//   leads: Types.ObjectId;
-
-
-// @Field(() => Appointment)
-//   @Prop({ type: Types.ObjectId, ref: 'Appointment' }) 
-//   appointment: Types.ObjectId;
-
-// @Field(() => Invoice)
-//   @Prop({ type: Types.ObjectId, ref: 'Invoice' }) 
-//   invoice: Types.ObjectId;
-
-// @Field(() => Client)
-//   @Prop({ type: Types.ObjectId, ref: 'Client' }) 
-//   client: Types.ObjectId;
-
-// @Field(() => Contract)
-//   @Prop({ type: Types.ObjectId, ref: 'Contract' }) 
-//   contract: Types.ObjectId;
-
 
   @Field(() => String) 
   @Prop({ type: String})
   clerkId: string;
 
-  @Field(() => String) 
-  @Prop({ type: String})
+  @Field(() => String ,{ nullable: true }) 
+  @Prop({ type: String, default:null})
   roadLocation: string;
 
-  @Field(() => String) 
-  @Prop({ type: String})
+  @Field(() => String ,{ nullable: true }) 
+  @Prop({ type: String, default:null})
   developmentName: string;
 
-  @Field(() => String) 
-  @Prop({ type: String})
+  @Field(() => String ,{ nullable: true }) 
+  @Prop({ type: String, default:null})
   subDevelopmentName: string;
 
-  @Field(() => String) 
-  @Prop({ type: String})
+  @Field(() => String ,{ nullable: true }) 
+  @Prop({ type: String, default:null})
   projectName: string;
 
   @Field(() => String) 
-  @Prop({ type:String, enum: propertyTypes})
+  @Prop({ type:String
+    // , enum: propertyTypes
+  })
   propertyType: string; 
 
-  @Field(() => Number) 
-  @Prop({ type: Number})
-  propertyHeight: number;
+  @Field(() => String ,{ nullable: true }) 
+  @Prop({ type: String, default:null})
+  propertyHeight: string;
 
-  @Field(() => String) 
-  @Prop({ type: String})
+  @Field(() => String ,{ nullable: true }) 
+  @Prop({ type: String, default:null})
   projectLocation: string;
 
   
-  @Field(() => Number) 
-  @Prop({ type: Number})
-  unitNumber: number;
+  @Field(() => String ,{ nullable: true }) 
+  @Prop({ type: String, default:null})
+  unitNumber: string;
 
-  @Field(() => Number) 
-  @Prop({ type: Number})
+  @Field(() => Number ,{ nullable: true }) 
+  @Prop({ type: Number , default:null})
   bedrooms: number;
 
-  @Field(() => Number) 
-  @Prop({ type: Number})
-  unitLandSize: number;
+  @Field(() => String ,{ nullable: true }) 
+  @Prop({ type: String, default:null})
+  unitLandSize: string;
 
-  @Field(() => Number) 
-  @Prop({ type: Number})
+  @Field(() => Number ,{ nullable: true }) 
+  @Prop({ type: Number, default:null })
   unitBua: number;
 
-  @Field(() => String) 
-  @Prop({ type: String})
+  @Field(() => String ,{ nullable: true }) 
+  @Prop({ type: String, default:null})
   unitLocation: string;
 
 
-  @Field(() => [String]) 
+  @Field(() => [String] ,{ nullable: true }) 
   @Prop({ type: [String] }) 
   unitView: string[];
 
-  @Field(() => [String]) 
+  @Field(() => [String],{ nullable: true }) 
   @Prop({ type: [String] }) 
   propertyImages: string[];
 
-  @Field(() => String) 
-  @Prop({ type: String})
+  @Field(() => String ,{ nullable: true }) 
+  @Prop({ type: String, default:null})
   Purpose: string;
 
-  @Field(() => String) 
-  @Prop({ type: String})
-  vacancyStatus: string;
+  @Field(() => String ,{ nullable: true }) 
+  @Prop({ type: String, default:null})
+  vacancyStatus?: string;
   
 
-  @Field(() => Number) 
-  @Prop({ type: Number})
+  @Field(() => Number ,{ nullable: true }) 
+  @Prop({ type: Number , default:null})
   primaryPrice: number;
 
-  @Field(() => Number) 
-  @Prop({ type: Number})
+  @Field(() => Number ,{ nullable: true }) 
+  @Prop({ type: Number, default:null})
   resalePrice: number;
 
-  @Field(() => Number) 
-  @Prop({ type: Number})
+  @Field(() => Number ,{ nullable: true }) 
+  @Prop({ type: Number , default:null})
   premiumAndLoss: number;
 
-  @Field(() => Number) 
-  @Prop({ type: Number})
+  @Field(() => Number ,{ nullable: true }) 
+  @Prop({ type: Number , default:null})
   Rent: number;
 
-  @Field(() => Number) 
-  @Prop({ type: Number})
+  @Field(() => Number ,{ nullable: true }) 
+  @Prop({ type: Number, default:null})
   noOfCheques: number;
 
 
 //   Boolean 
   @Field(() => Boolean) 
-  @Prop({ type: Boolean})
+  @Prop({ type: Boolean, default:false})
   listed: boolean;
 
   @Field(() => Date)  // Make createdAt nullable

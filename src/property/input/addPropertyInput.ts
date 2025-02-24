@@ -29,17 +29,17 @@ export class AddPropertyDto {
   @IsEnum(propertyTypes)
   propertyType: string;
 
-  @Field(() => Number)
-  @IsNumber()
-  propertyHeight: number;
+  @Field(() => String)
+  @IsString()
+  propertyHeight: string;
 
   @Field(() => String)
   @IsString()
   projectLocation: string;
 
-  @Field(() => Number)
-  @IsNumber()
-  unitNumber: number;
+  @Field(() => String)
+  @IsString()
+  unitNumber: string;
 
   @Field(() => Number)
   @IsNumber()

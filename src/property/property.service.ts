@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
 import { HttpStatusCode } from 'axios';
 import { ResponseDto } from 'src/dto/response.dto';
 import { AddPropertyDto } from './input/addPropertyInput';
@@ -9,6 +9,7 @@ import { userID } from 'utils/mongoId/deScopeIdForrmater';
 import { PropertyFilterInput } from './input/propertyFilterInput';
 import * as xlsx from 'xlsx';
 import { UpdatePropertyDto } from './input/updatePropertyInput';
+import * as fs from 'fs'
 
 @Injectable()
 export class PropertyService {
@@ -63,8 +64,6 @@ export class PropertyService {
     }
   }
   
-
-
   async getProperties(
     filter?: PropertyFilterInput,
     page: number = 1,
@@ -155,7 +154,6 @@ export class PropertyService {
       .exec();
   }
   
-  
   async getSingleRecord(docId: string): Promise<Property> {
     const property = await this.propertyModel.findById(docId).exec();
     if (!property) {
@@ -201,49 +199,91 @@ export class PropertyService {
     }
   }
 
-
-//   async processExcelFile(filePath: string): Promise<ResponseDto> {
-//     try {
-//       // Read Excel file
-//       const workbook = xlsx.readFile(filePath);
-//       const sheetName = workbook.SheetNames[0];
-//       const sheet = workbook.Sheets[sheetName];
-
-//       // Convert sheet data to JSON
-//       const jsonData: Partial<AddPropertyDto>[] = xlsx.utils.sheet_to_json(sheet);
-
-//       if (jsonData.length === 0) {
-//         return {
-//           success: false,
-//           statusCode: 400,
-//           msg: 'Empty file uploaded',
-//         };
-//       }
-
-//       // Validate and process each record
-//       const records: AddPropertyDto[] = jsonData.map((record) => ({
-//         ...record,
-//         unitView: record.unitView ? record.unitView.split(',') : [],
-//         propertyImages: record.propertyImages ? record.propertyImages.split(',') : [],
-//       }));
-
-//       // Insert into database
-//       await this.propertyModel.insertMany(records);
-
-//       return {
-//         success: true,
-//         statusCode: 201,
-//         msg: `${records.length} records successfully inserted`,
-//       };
-//     } catch (error) {
-//       console.error(error);
-//       return {
-//         success: false,
-//         statusCode: 500,
-//         msg: 'Error processing file',
-//       };
-//     }
-//   }
-
+  async readXlsxAndInsert(filePath: string, clerkId: string): Promise<any> {
+    try {
+      const fileBuffer = fs.readFileSync(filePath);
+      const workbook = xlsx.read(fileBuffer, { type: 'buffer' });
+  
+      const sheetName = workbook.SheetNames[0];
+      let sheetData = xlsx.utils.sheet_to_json(workbook.Sheets[sheetName]);
+  
+      // Function to convert keys to camelCase
+      const toCamelCase = (str: string) =>
+        str
+          .replace(/\s(.)/g, (match) => match.toUpperCase())
+          .replace(/\s/g, '')
+          .replace(/^(.)/, (match) => match.toLowerCase());
+  
+      // Normalize data keys for each row
+      const formattedSheetData = sheetData.map((row: any) => {
+        const newRow: any = {};
+        Object.keys(row).forEach((key) => {
+          newRow[toCamelCase(key)] = row[key];
+        });
+        return newRow;
+      });
+  
+      console.log(`Rows extracted from Excel: ${formattedSheetData.length}`);
+  
+      // Convert data into MongoDB insert format
+      const insertion = formattedSheetData.map((data: any) => ({
+        userId: userID(clerkId),
+        clerkId: clerkId,
+        roadLocation: data.roadLocation || null,
+        developmentName: data.developmentName || null,
+        subDevelopmentName: data.subDevelopmentName || null,
+        projectName: data.projectName || null,
+        propertyType: data.propertyType || null,
+        propertyHeight: data.propertyHeight || null,
+        projectLocation: data.projectLocation || null,
+        unitNumber: data.unitNumber || null,
+        bedrooms: data.bedrooms ? Number(data.bedrooms) : null,
+        unitLandSize: data.unitLandSize || null,
+        unitBua: data.unitBua ? Number(data.unitBua) : null,
+        unitLocation: data.unitLocation || null,
+        unitView: data.unitView ? (Array.isArray(data.unitView) ? data.unitView : [data.unitView]) : [],
+        propertyImages: data.propertyImages ? (Array.isArray(data.propertyImages) ? data.propertyImages : [data.propertyImages]) : [],
+        Purpose: data.Purpose || null,
+        vacancyStatus: data.vacancyStatus || null,
+        primaryPrice: data.primaryPrice ? Number(data.primaryPrice) : null,
+        resalePrice: data.resalePrice ? Number(data.resalePrice) : null,
+        premiumAndLoss: data.premiumAndLoss ? Number(data.premiumAndLoss) : null,
+        Rent: data.Rent ? Number(data.Rent) : null,
+        noOfCheques: data.noOfCheques ? Number(data.noOfCheques) : null,
+      }));
+  
+      console.log(`Records to insert: ${insertion.length}`);
+  
+      // Batch Insert
+      const BATCH_SIZE = 10000;
+      let batchCount = 0;
+      
+      for (let i = 0; i < insertion.length; i += BATCH_SIZE) {
+        const batch = insertion.slice(i, i + BATCH_SIZE);
+        await this.propertyModel.insertMany(batch);
+        batchCount++;
+        console.log(`Inserted batch ${batchCount}, Records: ${batch.length}`);
+      }
+  
+      console.log("All records inserted successfully!");
+  
+      return {
+        success: true,
+        statusCode: 201,
+        message: "All records inserted successfully",
+      };
+    } catch (e) {
+      console.error(e);
+      throw new HttpException('Internal Server Error', HttpStatus.INTERNAL_SERVER_ERROR);
+    } finally {
+      if (filePath) {
+        fs.unlink(filePath, (err) => {
+          if (err) console.error('Error deleting file:', err);
+        });
+      }
+    }
+  }
+  
+  
 
 }
