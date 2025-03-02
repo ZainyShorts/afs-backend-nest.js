@@ -13,11 +13,6 @@ import { propertyTypes } from 'utils/enum/enums';
   timestamps: true,
 })
 export class Property extends Document {
-
-  //Document id
-  @Field(() => String ,{ nullable: false }) 
-  _id: Types.ObjectId;
-
   //   @Field(() => Document)
   //   @Prop({ type: Types.ObjectId, ref: 'Document' }) 
   //   documents: Types.ObjectId;
@@ -60,6 +55,11 @@ export class Property extends Document {
   // @Field(() => Contract)
   //   @Prop({ type: Types.ObjectId, ref: 'Contract' }) 
   //   contract: Types.ObjectId;
+
+  //Document id
+  @Field(() => String ,{ nullable: false }) 
+  _id: Types.ObjectId;
+
 
   //Reference other  documents
   @Field(() => User)

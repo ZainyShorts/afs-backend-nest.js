@@ -10,6 +10,7 @@ import { PropertyFilterInput } from './input/propertyFilterInput';
 import * as xlsx from 'xlsx';
 import { UpdatePropertyDto } from './input/updatePropertyInput';
 import * as fs from 'fs'
+import { PaginatedProperties } from './output/properties.dto';
 
 @Injectable()
 export class PropertyService {
@@ -70,12 +71,11 @@ export class PropertyService {
     limit: number = 10,
     sortBy: string = 'createdAt',
     sortOrder: string = 'desc'
-  ): Promise<Property[]> {
+  ): Promise<PaginatedProperties> {
     const query: any = {};
   
     if (filter) {
       Object.keys(filter).forEach((key) => {
-
         if (
           filter[key] !== undefined &&
           key !== 'startDate' &&
@@ -118,7 +118,7 @@ export class PropertyService {
         if (filter.resalePriceRange.max !== undefined)
           query.resalePrice.$lte = filter.resalePriceRange.max;
       }
-
+  
       if (filter.bedrooms) {
         query.bedrooms = {};
         if (filter.bedrooms.min !== undefined) {
@@ -128,31 +128,56 @@ export class PropertyService {
           query.bedrooms.$lte = filter.bedrooms.max;
         }
       }
-
+  
+      // Fix unitView filtering
       if (filter.unitView && filter.unitView.length > 0) {
-        query.unitView = {
-          $in: filter.unitView.map(tag => new RegExp(tag, "i")), // Case-insensitive regex match
-        };
+        query.unitView = { $in: filter.unitView };
       }
   
       if (filter.rentRange) {
         query.Rent = {};
-        if (filter.rentRange.min !== undefined)
-          query.Rent.$gte = filter.rentRange.min;
-        if (filter.rentRange.max !== undefined)
-          query.Rent.$lte = filter.rentRange.max;
+        if (filter.rentRange.min !== undefined) query.Rent.$gte = filter.rentRange.min;
+        if (filter.rentRange.max !== undefined) query.Rent.$lte = filter.rentRange.max;
       }
     }
   
     const sortDirection = sortOrder === 'asc' ? 1 : -1;
   
-    return this.propertyModel
+    // Ensure page is at least 1
+    page = Math.max(page, 1);
+  
+    // Get total count efficiently
+    const totalCount =
+      Object.keys(query).length > 0
+        ? await this.propertyModel.countDocuments(query)
+        : await this.propertyModel.estimatedDocumentCount();
+  
+    // Fetch paginated properties
+    const properties = await this.propertyModel
       .find(query)
       .sort({ [sortBy]: sortDirection })
       .skip((page - 1) * limit)
       .limit(limit)
       .exec();
+  
+    return {
+      data: properties,
+      totalCount,
+      totalPages: Math.max(Math.ceil(totalCount / limit), 1),
+      pageNumber: page,
+    };
   }
+
+
+  
+  
+
+
+
+
+
+  
+  
   
   async getSingleRecord(docId: string): Promise<Property> {
     const property = await this.propertyModel.findById(docId).exec();

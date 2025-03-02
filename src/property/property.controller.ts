@@ -33,6 +33,8 @@ export class PropertyController {
         return this.prropertyService.readXlsxAndInsert(file.path,data.clerkId);
     }
 
+    
+
 
     
 }
