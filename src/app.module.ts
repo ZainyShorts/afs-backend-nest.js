@@ -11,6 +11,7 @@ import { EventsController } from './events/events.controller';
 import { PropertyModule } from './property/property.module';
 import { MasterDevelopmentModule } from './masterdevelopment/masterdevelopment.module';
 import { DocumentModule } from './document/document.module';
+import { SubDevelopmentModule } from './subdevelopment/subdevelopment.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { DocumentModule } from './document/document.module';
     PropertyModule,
     MasterDevelopmentModule,
     DocumentModule,
+    SubDevelopmentModule,
   ],
   controllers: [AppController, EventsController],
   providers: [AppService, AppResolver, EventsGateway],

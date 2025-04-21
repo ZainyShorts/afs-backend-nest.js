@@ -76,11 +76,14 @@ export class MasterDevelopmentService {
       const created = new this.MasterDevelopmentModel(dto);
       return await created.save();
     } catch (error) {
-      if (error instanceof BadRequestException) {
-        throw error;
+      if (error.response.statusCode == 400) {
+        throw new BadRequestException(
+          'Failed to create master development. Check your input.',
+        );
       }
-      throw new BadRequestException(
-        'Failed to create master development. Check your input.',
+      // Throw Internal Server Error
+      throw new InternalServerErrorException(
+        error?.response?.message || 'Internal server error occurred.',
       );
     }
   }

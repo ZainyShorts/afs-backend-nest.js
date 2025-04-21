@@ -26,12 +26,35 @@ export enum FacilitiesCategory {
   PUBLIC_TRANSPORT = 'Public Transport',
 }
 
+export enum PlotStatus {
+  Vacant = 'Vacant',
+  UnderConstruction = 'Under Construction',
+  Ready = 'Ready',
+  Pending = 'Pending',
+}
+
 export enum FileType {
   DOCX = 'docx',
   XLSX = 'xlsx',
   CSV = 'csv',
   IMAGE = 'image',
   PDF = 'pdf',
+}
+
+export enum PropertyType {
+  Apartment = 'Apartment',
+  Shops = 'Shops',
+  Offices = 'Offices',
+  Hotel = 'Hotel',
+  Townhouse = 'Townhouse',
+  Villas = 'Villas',
+  Mansions = 'Mansions',
+  Showroom = 'Showroom',
+  Warehouse = 'Warehouse',
+  LabourCamp = 'Labour Camp',
+  Hospital = 'Hospital',
+  School = 'School',
+  Bungalow = 'Bungalow',
 }
 
 export enum AmenitiesCategory {

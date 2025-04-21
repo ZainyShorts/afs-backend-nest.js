@@ -44,6 +44,7 @@ export class MasterDevelopmentController {
   ) {
     return this.service.findAll(filter, +page, +limit, sortBy, sortOrder);
   }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.service.findOne(id);

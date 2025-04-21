@@ -20,16 +20,16 @@ export class MasterDevelopment extends Document {
   @Prop({ enum: LocationQuality, required: true })
   locationQuality: string;
 
-  @Prop({ required: true, trim: true })
+  @Prop({ required: true })
   buaAreaSqFt: number;
 
-  @Prop({ required: true, trim: true })
+  @Prop({ required: true })
   facilitiesAreaSqFt: number;
 
-  @Prop({ required: true, trim: true })
+  @Prop({ required: true })
   amentiesAreaSqFt: number;
 
-  @Prop({ required: true, trim: true })
+  @Prop({ required: true })
   totalAreaSqFt: number;
 
   @Prop({ type: [String] })
