@@ -39,6 +39,7 @@ export enum FileType {
   CSV = 'csv',
   IMAGE = 'image',
   PDF = 'pdf',
+  VIDEO = 'video',
 }
 
 export enum PropertyType {
