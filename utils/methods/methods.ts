@@ -20,10 +20,30 @@ export function toCamelCase(str: string): string {
 }
 
 // Manual header-to-database key mapping
-export const headerMapping: { [key: string]: string } = {
+export const MasterDevelopmentheaderMapping: { [key: string]: string } = {
+  Country: 'country',
+  City: 'city',
   'Road Location': 'roadLocation',
   'Development Name': 'developmentName',
   'Location Quality': 'locationQuality',
+  'BUA Area': 'buaAreaSqFt',
+  'Facilities Area': 'facilitiesAreaSqFt',
+  'Amenities Area': 'amentiesAreaSqFt',
+};
+
+export const SubDevelopmentheaderMapping: { [key: string]: string } = {
+  'Development Name': 'developmentName',
+  'Sub Development': 'subDevelopmentName',
+  'Plot Number': 'plotNumber',
+  'Plot Height': 'plotHeight',
+  'Plot Permission1': 'plotPermission1',
+  'Plot Permission2': 'plotPermission2',
+  'Plot Permission3': 'plotPermission3',
+  'Plot Permission4': 'plotPermission4',
+  'Plot Permission5': 'plotPermission5',
+  'Plot Size': 'plotSizeSqFt',
+  'Plot BUA': 'plotBUASqFt',
+  'Plot Status': 'plotStatus',
   'BUA Area': 'buaAreaSqFt',
   'Facilities Area': 'facilitiesAreaSqFt',
   'Amenities Area': 'amentiesAreaSqFt',

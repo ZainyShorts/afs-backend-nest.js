@@ -1,4 +1,6 @@
 export class MasterDevelopmentFilterInput {
+  country?: string;
+  city?: string;
   developmentName?: string;
   roadLocation?: string;
   locationQuality?: string;

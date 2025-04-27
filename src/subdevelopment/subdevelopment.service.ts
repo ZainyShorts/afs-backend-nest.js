@@ -15,28 +15,21 @@ import {
   FacilitiesCategory,
   PlotStatus,
 } from 'utils/enum/enums';
+import * as XLSX from 'xlsx';
+import * as fs from 'fs';
+import { SubDevelopmentheaderMapping } from 'utils/methods/methods';
+import { MasterDevelopmentService } from 'src/masterdevelopment/masterdevelopment.service';
 
 @Injectable()
 export class SubDevelopmentService {
   constructor(
     @InjectModel(SubDevelopment.name)
     private readonly subDevelopmentModel: Model<SubDevelopment>,
+    private readonly masterDevelopmentService: MasterDevelopmentService,
   ) {}
 
   async create(dto: CreateSubDevelopmentDto): Promise<SubDevelopment> {
     try {
-      // Check for duplicate subDevelopment name
-      const duplicate = await this.subDevelopmentModel.findOne({
-        subDevelopment: dto.subDevelopment,
-        plotNumber: dto.plotNumber,
-      });
-
-      if (duplicate) {
-        throw new BadRequestException(
-          'A record with the same SubDevelopment and Plot Number already exists.',
-        );
-      }
-
       // Optional validation (can be enum based if needed)
       if (dto.facilitiesCategories) {
         for (const facility of dto.facilitiesCategories) {
@@ -81,81 +74,90 @@ export class SubDevelopmentService {
     sortBy = 'createdAt',
     sortOrder = 'desc',
     populate?: string,
-  ) {
-    const query: any = {};
+  ): Promise<any> {
+    try {
+      const query: any = {};
 
-    if (filter) {
-      if (filter.subDevelopment) {
-        query.subDevelopment = {
-          $regex: new RegExp(filter.subDevelopment, 'i'),
-        };
+      if (filter) {
+        if (filter.subDevelopment) {
+          query.subDevelopment = {
+            $regex: new RegExp(filter.subDevelopment, 'i'),
+          };
+        }
+
+        if (filter.plotNumber !== undefined) {
+          query.plotNumber = filter.plotNumber;
+        }
+
+        if (filter.plotStatus) {
+          query.plotStatus = filter.plotStatus;
+        }
+
+        if (filter.buaAreaSqFtRange) {
+          query.buaAreaSqFt = {};
+          if (filter.buaAreaSqFtRange.min !== undefined)
+            query.buaAreaSqFt.$gte = filter.buaAreaSqFtRange.min;
+          if (filter.buaAreaSqFtRange.max !== undefined)
+            query.buaAreaSqFt.$lte = filter.buaAreaSqFtRange.max;
+        }
+
+        if (filter.totalSizeSqFtRange) {
+          query.totalSizeSqFt = {};
+          if (filter.totalSizeSqFtRange.min !== undefined)
+            query.totalSizeSqFt.$gte = filter.totalSizeSqFtRange.min;
+          if (filter.totalSizeSqFtRange.max !== undefined)
+            query.totalSizeSqFt.$lte = filter.totalSizeSqFtRange.max;
+        }
+
+        if (filter.plotPermission?.length > 0) {
+          query.plotPermission = { $in: filter.plotPermission };
+        }
+
+        if (filter.facilitiesCategories?.length > 0) {
+          query.facilitiesCategories = { $in: filter.facilitiesCategories };
+        }
+
+        if (filter.amentiesCategories?.length > 0) {
+          query.amentiesCategories = { $in: filter.amentiesCategories };
+        }
+
+        if (filter.startDate || filter.endDate) {
+          query.createdAt = {};
+          if (filter.startDate)
+            query.createdAt.$gte = new Date(filter.startDate);
+          if (filter.endDate) query.createdAt.$lte = new Date(filter.endDate);
+        }
       }
 
-      if (filter.plotNumber !== undefined) {
-        query.plotNumber = filter.plotNumber;
-      }
+      const sortDirection = sortOrder === 'asc' ? 1 : -1;
 
-      if (filter.plotPermission) {
-        query.plotPermission = filter.plotPermission;
-      }
+      const totalCount =
+        Object.keys(query).length > 0
+          ? await this.subDevelopmentModel.countDocuments(query)
+          : await this.subDevelopmentModel.estimatedDocumentCount();
 
-      if (filter.plotStatus) {
-        query.plotStatus = filter.plotStatus;
-      }
+      const data = await this.subDevelopmentModel
+        .find(query)
+        .populate(populate) // If you want to populate
+        .sort({ [sortBy]: sortDirection })
+        .skip((page - 1) * limit)
+        .limit(limit)
+        .exec();
 
-      if (filter.buaAreaSqFtRange) {
-        query.buaAreaSqFt = {};
-        if (filter.buaAreaSqFtRange.min !== undefined)
-          query.buaAreaSqFt.$gte = filter.buaAreaSqFtRange.min;
-        if (filter.buaAreaSqFtRange.max !== undefined)
-          query.buaAreaSqFt.$lte = filter.buaAreaSqFtRange.max;
-      }
-
-      if (filter.totalSizeSqFtRange) {
-        query.totalSizeSqFt = {};
-        if (filter.totalSizeSqFtRange.min !== undefined)
-          query.totalSizeSqFt.$gte = filter.totalSizeSqFtRange.min;
-        if (filter.totalSizeSqFtRange.max !== undefined)
-          query.totalSizeSqFt.$lte = filter.totalSizeSqFtRange.max;
-      }
-
-      if (filter.facilitiesCategories?.length > 0) {
-        query.facilitiesCategories = { $in: filter.facilitiesCategories };
-      }
-
-      if (filter.amentiesCategories?.length > 0) {
-        query.amentiesCategories = { $in: filter.amentiesCategories };
-      }
-
-      if (filter.startDate || filter.endDate) {
-        query.createdAt = {};
-        if (filter.startDate) query.createdAt.$gte = new Date(filter.startDate);
-        if (filter.endDate) query.createdAt.$lte = new Date(filter.endDate);
-      }
+      return {
+        data,
+        totalCount,
+        totalPages: Math.ceil(totalCount / limit),
+        pageNumber: page,
+      };
+    } catch (error) {
+      console.error('Error fetching SubDevelopments:', error);
+      throw new InternalServerErrorException(
+        error?.message || 'An error occurred while fetching SubDevelopments.',
+      );
     }
-
-    const sortDirection = sortOrder === 'asc' ? 1 : -1;
-
-    const totalCount =
-      Object.keys(query).length > 0
-        ? await this.subDevelopmentModel.countDocuments(query)
-        : await this.subDevelopmentModel.estimatedDocumentCount();
-
-    const data = await this.subDevelopmentModel
-      .find(query)
-      .populate(populate) // If you want to populate
-      .sort({ [sortBy]: sortDirection })
-      .skip((page - 1) * limit)
-      .limit(limit)
-      .exec();
-
-    return {
-      data,
-      totalCount,
-      totalPages: Math.ceil(totalCount / limit),
-      pageNumber: page,
-    };
   }
+
   async findOne(id: string, populate?: string) {
     try {
       const result = await this.subDevelopmentModel
@@ -235,7 +237,150 @@ export class SubDevelopmentService {
     }
   }
 
-  remove(id: string) {
-    return this.subDevelopmentModel.findByIdAndDelete(id).exec();
+  async remove(id: string): Promise<any> {
+    try {
+      const result = await this.subDevelopmentModel
+        .findByIdAndDelete(id)
+        .exec();
+      if (!result) {
+        throw new NotFoundException(`SubDevelopment with id ${id} not found`);
+      }
+      return {
+        success: true,
+        message: `SubDevelopment with id ${id} has been deleted.`,
+      };
+    } catch (error) {
+      console.error('Error deleting SubDevelopment:', error);
+      throw new InternalServerErrorException(
+        error?.message || 'An error occurred while deleting SubDevelopment.',
+      );
+    }
+  }
+
+  async importExcelFile(filePath: string): Promise<any> {
+    try {
+      const fileBuffer = fs.readFileSync(filePath);
+      const workbook = XLSX.read(fileBuffer, { type: 'buffer' });
+      const sheetName = workbook.SheetNames[0];
+      const sheet = workbook.Sheets[sheetName];
+      const jsonData = XLSX.utils.sheet_to_json(sheet);
+
+      const formattedData = jsonData.map((row: any) => {
+        const formattedRow: any = {};
+        for (const key in row) {
+          const cleanedKey = key.replace(/\n/g, '').trim();
+          const mappedKey = SubDevelopmentheaderMapping[cleanedKey];
+          if (mappedKey) {
+            formattedRow[mappedKey] = row[key];
+          }
+        }
+
+        formattedRow.totalAreaSqFt =
+          (formattedRow.buaAreaSqFt || 0) +
+          (formattedRow.facilitiesAreaSqFt || 0) +
+          (formattedRow.amentiesAreaSqFt || 0);
+
+        const plotPermissionList = [];
+
+        if (formattedRow.plotPermission1)
+          return plotPermissionList.push(formattedData.plotPermission1);
+
+        if (formattedRow.plotPermission2)
+          return plotPermissionList.push(formattedData.plotPermission2);
+
+        if (formattedRow.plotPermission3)
+          return plotPermissionList.push(formattedData.plotPermission3);
+
+        if (formattedRow.plotPermission4)
+          return plotPermissionList.push(formattedData.plotPermission4);
+
+        if (formattedRow.plotPermission5)
+          return plotPermissionList.push(formattedData.plotPermission5);
+
+        formattedRow.plotPermission = plotPermissionList;
+
+        const requiredFields = [
+          'developmentName',
+          'subDevelopmentName',
+          'plotNumber',
+          'plotHeight',
+          'plotSizeSqFt',
+          'plotBUASqFt',
+          'plotStatus',
+          'plotPermission',
+          'buaAreaSqFt',
+          'facilitiesAreaSqFt',
+          'amentiesAreaSqFt',
+          'totalAreaSqFt',
+        ];
+
+        for (const field of requiredFields) {
+          if (!formattedRow[field] || formattedRow[field] === 0) {
+            console.log(`Missing or empty field: ${field}`);
+            throw new BadRequestException(
+              'File format is not correct. Missing or empty fields.',
+            );
+          }
+        }
+
+        return formattedRow;
+      });
+
+      const developmentList =
+        await this.masterDevelopmentService.getAllMasterDevelopment([
+          '_id',
+          'developmentName',
+        ]);
+
+      if (formattedData.length === 0) {
+        // No new data to insert
+        fs.unlinkSync(filePath);
+        return {
+          success: true,
+          totalEntries: jsonData.length,
+          insertedEntries: 0,
+          skippedDuplicateEntires: 0,
+        };
+      }
+
+      const chunkSize = 5000;
+      let insertedDataCount = 0;
+
+      for (let i = 0; i < formattedData.length; i += chunkSize) {
+        const chunk = formattedData.slice(i, i + chunkSize);
+
+        if (chunk.length === 0) continue;
+
+        try {
+          await this.subDevelopmentModel.insertMany(chunk, {
+            ordered: false,
+          });
+          insertedDataCount += chunk.length;
+        } catch (error) {
+          console.error(`Error inserting chunk starting at index ${i}:`, error);
+        }
+      }
+
+      fs.unlinkSync(filePath);
+
+      return {
+        success: true,
+        totalEntries: jsonData.length,
+        insertedEntries: insertedDataCount,
+        skippedDuplicateEntires: 0,
+      };
+    } catch (error) {
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+      }
+      if (error.response?.statusCode === 400) {
+        throw new BadRequestException(
+          'File format is not correct. Missing or empty fields.',
+        );
+      }
+      throw new InternalServerErrorException(
+        error?.response?.message || 'Internal server error occurred.',
+      );
+    }
   }
 }

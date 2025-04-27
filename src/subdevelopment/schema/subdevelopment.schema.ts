@@ -13,38 +13,38 @@ export class SubDevelopment extends Document {
   @Prop({ type: Types.ObjectId, ref: 'MasterDevelopment', required: true })
   masterDevelopment: MasterDevelopment;
 
-  @Prop({ required: true, unique: true, trim: true })
+  @Prop({ required: true, trim: true })
   subDevelopment: string;
 
-  @Prop({ required: true })
+  @Prop({ default: 0 })
   plotNumber: number;
 
-  @Prop({ required: true })
+  @Prop({ default: 0 })
   plotHeight: number;
 
-  @Prop({ enum: PropertyType, required: true })
-  plotPermission: string;
+  @Prop({ enum: PropertyType, type: [String], required: true })
+  plotPermission: string[];
 
-  @Prop({ required: true })
+  @Prop({ default: 0 })
   plotSizeSqFt: number;
 
-  @Prop({ required: true })
+  @Prop({ default: 0 })
   plotBUASqFt: number;
 
   @Prop({ enum: PlotStatus, required: true })
   plotStatus: string;
 
-  @Prop({ required: true })
+  @Prop({ default: 0 })
   buaAreaSqFt: number;
 
-  @Prop({ required: true })
+  @Prop({ default: 0 })
   facilitiesAreaSqFt: number;
 
-  @Prop({ required: true })
+  @Prop({ default: 0 })
   amenitiesAreaSqFt: number;
 
-  @Prop({ required: true })
-  totalSizeSqFt: number;
+  @Prop({ default: 0 })
+  totalAreaSqFt: number;
 
   @Prop({ type: [String] })
   pictures: string[];

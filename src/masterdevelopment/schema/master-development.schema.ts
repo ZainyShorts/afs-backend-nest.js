@@ -12,6 +12,12 @@ import {
 })
 export class MasterDevelopment extends Document {
   @Prop({ required: true, trim: true })
+  country: string;
+
+  @Prop({ required: true, trim: true })
+  city: string;
+
+  @Prop({ required: true, trim: true })
   roadLocation: string;
 
   @Prop({ required: true, unique: true, trim: true })
@@ -20,16 +26,16 @@ export class MasterDevelopment extends Document {
   @Prop({ enum: LocationQuality, required: true })
   locationQuality: string;
 
-  @Prop({ required: true })
+  @Prop({ default: 0 })
   buaAreaSqFt: number;
 
-  @Prop({ required: true })
+  @Prop({ default: 0 })
   facilitiesAreaSqFt: number;
 
-  @Prop({ required: true })
+  @Prop({ default: 0 })
   amentiesAreaSqFt: number;
 
-  @Prop({ required: true })
+  @Prop({ default: 0 })
   totalAreaSqFt: number;
 
   @Prop({ type: [String] })

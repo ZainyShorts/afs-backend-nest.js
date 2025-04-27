@@ -15,5 +15,6 @@ import { MasterDevelopmentController } from './masterdevelopment.controller';
   ],
   providers: [MasterDevelopmentService],
   controllers: [MasterDevelopmentController],
+  exports: [MasterDevelopmentService],
 })
 export class MasterDevelopmentModule {}

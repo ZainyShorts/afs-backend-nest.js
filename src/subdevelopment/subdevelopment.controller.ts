@@ -7,10 +7,17 @@ import {
   Param,
   Delete,
   Query,
+  UseInterceptors,
+  UploadedFile,
 } from '@nestjs/common';
 import { SubDevelopmentService } from './subdevelopment.service';
 import { CreateSubDevelopmentDto } from './dto/create-sub-development.dto';
 import { SubDevelopmentFilterInput } from './dto/sub-development-filter.input';
+import { FileInterceptor } from '@nestjs/platform-express';
+import {
+  multerOptionsForXlxs,
+  UploadedFileType,
+} from 'utils/multer/multer.config';
 
 @Controller('subDevelopment')
 export class SubDevelopmentController {
@@ -19,6 +26,12 @@ export class SubDevelopmentController {
   @Post('addSingleRecord')
   create(@Body() dto: CreateSubDevelopmentDto) {
     return this.service.create(dto);
+  }
+
+  @Post('import')
+  @UseInterceptors(FileInterceptor('file', multerOptionsForXlxs))
+  import(@UploadedFile() file: UploadedFileType) {
+    return this.service.importExcelFile(file.path);
   }
 
   @Get()

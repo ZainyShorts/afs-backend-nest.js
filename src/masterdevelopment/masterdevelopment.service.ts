@@ -16,7 +16,7 @@ import {
 } from 'utils/enum/enums';
 import { UpdateMasterDevelopmentDto } from './dto/update-master-development.dto';
 import { MasterDevelopmentFilterInput } from './dto/MasterDevelopmentFilterInput';
-import { headerMapping } from 'utils/methods/methods';
+import { MasterDevelopmentheaderMapping } from 'utils/methods/methods';
 
 @Injectable()
 export class MasterDevelopmentService {
@@ -95,71 +95,78 @@ export class MasterDevelopmentService {
     sortBy = 'createdAt',
     sortOrder = 'desc',
   ) {
-    const query: any = {};
+    try {
+      const query: any = {};
 
-    if (filter) {
-      if (filter.developmentName) {
-        query.developmentName = {
-          $regex: new RegExp(filter.developmentName, 'i'),
-        };
-      }
-      if (filter.roadLocation) {
-        query.roadLocation = { $regex: new RegExp(filter.roadLocation, 'i') };
-      }
-      if (filter.locationQuality) {
-        query.locationQuality = filter.locationQuality;
+      if (filter) {
+        if (filter.developmentName) {
+          query.developmentName = {
+            $regex: new RegExp(filter.developmentName, 'i'),
+          };
+        }
+        if (filter.roadLocation) {
+          query.roadLocation = { $regex: new RegExp(filter.roadLocation, 'i') };
+        }
+        if (filter.country) {
+          query.country = { $regex: new RegExp(filter.country, 'i') };
+        }
+        if (filter.city) {
+          query.city = { $regex: new RegExp(filter.city, 'i') };
+        }
+        if (filter.locationQuality) {
+          query.locationQuality = filter.locationQuality;
+        }
+        if (filter.buaAreaSqFtRange) {
+          query.buaAreaSqFt = {};
+          if (filter.buaAreaSqFtRange.min !== undefined)
+            query.buaAreaSqFt.$gte = filter.buaAreaSqFtRange.min;
+          if (filter.buaAreaSqFtRange.max !== undefined)
+            query.buaAreaSqFt.$lte = filter.buaAreaSqFtRange.max;
+        }
+        if (filter.totalAreaSqFtRange) {
+          query.totalAreaSqFt = {};
+          if (filter.totalAreaSqFtRange.min !== undefined)
+            query.totalAreaSqFt.$gte = filter.totalAreaSqFtRange.min;
+          if (filter.totalAreaSqFtRange.max !== undefined)
+            query.totalAreaSqFt.$lte = filter.totalAreaSqFtRange.max;
+        }
+        if (filter.facilitiesCategories?.length > 0) {
+          query.facilitiesCategories = { $in: filter.facilitiesCategories };
+        }
+        if (filter.amentiesCategories?.length > 0) {
+          query.amentiesCategories = { $in: filter.amentiesCategories };
+        }
+        if (filter.startDate || filter.endDate) {
+          query.createdAt = {};
+          if (filter.startDate)
+            query.createdAt.$gte = new Date(filter.startDate);
+          if (filter.endDate) query.createdAt.$lte = new Date(filter.endDate);
+        }
       }
 
-      if (filter.buaAreaSqFtRange) {
-        query.buaAreaSqFt = {};
-        if (filter.buaAreaSqFtRange.min !== undefined)
-          query.buaAreaSqFt.$gte = filter.buaAreaSqFtRange.min;
-        if (filter.buaAreaSqFtRange.max !== undefined)
-          query.buaAreaSqFt.$lte = filter.buaAreaSqFtRange.max;
-      }
+      const sortDirection = sortOrder === 'asc' ? 1 : -1;
 
-      if (filter.totalAreaSqFtRange) {
-        query.totalAreaSqFt = {};
-        if (filter.totalAreaSqFtRange.min !== undefined)
-          query.totalAreaSqFt.$gte = filter.totalAreaSqFtRange.min;
-        if (filter.totalAreaSqFtRange.max !== undefined)
-          query.totalAreaSqFt.$lte = filter.totalAreaSqFtRange.max;
-      }
+      const totalCount =
+        Object.keys(query).length > 0
+          ? await this.MasterDevelopmentModel.countDocuments(query)
+          : await this.MasterDevelopmentModel.estimatedDocumentCount();
 
-      if (filter.facilitiesCategories?.length > 0) {
-        query.facilitiesCategories = { $in: filter.facilitiesCategories };
-      }
+      const data = await this.MasterDevelopmentModel.find(query)
+        .sort({ [sortBy]: sortDirection })
+        .skip((page - 1) * limit)
+        .limit(limit)
+        .exec();
 
-      if (filter.amentiesCategories?.length > 0) {
-        query.amentiesCategories = { $in: filter.amentiesCategories };
-      }
-
-      if (filter.startDate || filter.endDate) {
-        query.createdAt = {};
-        if (filter.startDate) query.createdAt.$gte = new Date(filter.startDate);
-        if (filter.endDate) query.createdAt.$lte = new Date(filter.endDate);
-      }
+      return {
+        data,
+        totalCount,
+        totalPages: Math.ceil(totalCount / limit),
+        pageNumber: page,
+      };
+    } catch (error) {
+      console.error('Error fetching MasterDevelopments:', error);
+      throw new Error('Failed to fetch MasterDevelopments.');
     }
-
-    const sortDirection = sortOrder === 'asc' ? 1 : -1;
-
-    const totalCount =
-      Object.keys(query).length > 0
-        ? await this.MasterDevelopmentModel.countDocuments(query)
-        : await this.MasterDevelopmentModel.estimatedDocumentCount();
-
-    const data = await this.MasterDevelopmentModel.find(query)
-      .sort({ [sortBy]: sortDirection })
-      .skip((page - 1) * limit)
-      .limit(limit)
-      .exec();
-
-    return {
-      data,
-      totalCount,
-      totalPages: Math.ceil(totalCount / limit),
-      pageNumber: page,
-    };
   }
 
   private validateEntry(dto: any): boolean {
@@ -206,101 +213,117 @@ export class MasterDevelopmentService {
   }
 
   async findOne(id: string): Promise<MasterDevelopment> {
-    return this.MasterDevelopmentModel.findById(id).exec();
+    try {
+      const development = await this.MasterDevelopmentModel.findById(id).exec();
+      return development;
+    } catch (error) {
+      console.error('Error finding MasterDevelopment by ID:', error);
+      throw new Error('Failed to find MasterDevelopment');
+    }
   }
 
   async delete(id: string): Promise<void> {
-    await this.MasterDevelopmentModel.findByIdAndDelete(id).exec();
+    try {
+      await this.MasterDevelopmentModel.findByIdAndDelete(id).exec();
+    } catch (error) {
+      console.error('Error deleting MasterDevelopment by ID:', error);
+      throw new Error('Failed to delete MasterDevelopment');
+    }
   }
 
   async update(
     id: string,
     dto: UpdateMasterDevelopmentDto,
   ): Promise<MasterDevelopment> {
-    const dev = await this.MasterDevelopmentModel.findById(id);
-    if (dto.developmentName && dto.developmentName != dev.developmentName) {
-      const exists = await this.MasterDevelopmentModel.findOne({
-        developmentName: dto.developmentName,
-      });
-      if (exists) {
-        throw new BadRequestException(
-          'A record with the same Development Name already exists.',
-        );
+    try {
+      const dev = await this.MasterDevelopmentModel.findById(id);
+      if (!dev) {
+        throw new BadRequestException('MasterDevelopment not found.');
       }
-    }
-    if (
-      dto.locationQuality &&
-      !Object.values(LocationQuality).includes(
-        dto.locationQuality as LocationQuality,
-      )
-    ) {
-      throw new BadRequestException(`Invalid locationQuality.`);
-    }
 
-    if (dto.facilitiesCategories) {
-      for (const facility of dto.facilitiesCategories) {
-        if (
-          !Object.values(FacilitiesCategory).includes(
-            facility as FacilitiesCategory,
-          )
-        ) {
+      if (dto.developmentName && dto.developmentName != dev.developmentName) {
+        const exists = await this.MasterDevelopmentModel.findOne({
+          developmentName: dto.developmentName,
+        });
+        if (exists) {
           throw new BadRequestException(
-            `Invalid facility category: ${facility}.`,
+            'A record with the same Development Name already exists.',
           );
         }
       }
-    }
 
-    if (dto.amentiesCategories) {
-      for (const amenity of dto.amentiesCategories) {
-        if (
-          !Object.values(AmenitiesCategory).includes(
-            amenity as AmenitiesCategory,
-          )
-        ) {
-          throw new BadRequestException(
-            `Invalid amenity category: ${amenity}.`,
-          );
+      if (
+        dto.locationQuality &&
+        !Object.values(LocationQuality).includes(
+          dto.locationQuality as LocationQuality,
+        )
+      ) {
+        throw new BadRequestException(`Invalid locationQuality.`);
+      }
+
+      if (dto.facilitiesCategories) {
+        for (const facility of dto.facilitiesCategories) {
+          if (
+            !Object.values(FacilitiesCategory).includes(
+              facility as FacilitiesCategory,
+            )
+          ) {
+            throw new BadRequestException(
+              `Invalid facility category: ${facility}.`,
+            );
+          }
         }
       }
+
+      if (dto.amentiesCategories) {
+        for (const amenity of dto.amentiesCategories) {
+          if (
+            !Object.values(AmenitiesCategory).includes(
+              amenity as AmenitiesCategory,
+            )
+          ) {
+            throw new BadRequestException(
+              `Invalid amenity category: ${amenity}.`,
+            );
+          }
+        }
+      }
+
+      return await this.MasterDevelopmentModel.findByIdAndUpdate(id, dto, {
+        new: true,
+      }).exec();
+    } catch (error) {
+      console.error('Error updating MasterDevelopment:', error);
+      throw new BadRequestException('Failed to update MasterDevelopment.');
     }
-    return this.MasterDevelopmentModel.findByIdAndUpdate(id, dto, {
-      new: true,
-    }).exec();
   }
 
   async importExcelFile(filePath: string): Promise<any> {
     try {
-      // Read the file from the file system
       const fileBuffer = fs.readFileSync(filePath);
-
-      // Parse the Excel file
       const workbook = XLSX.read(fileBuffer, { type: 'buffer' });
       const sheetName = workbook.SheetNames[0];
       const sheet = workbook.Sheets[sheetName];
-
-      // Convert sheet to JSON
       const jsonData = XLSX.utils.sheet_to_json(sheet);
 
-      // Manually map headers to database keys
       const formattedData = jsonData.map((row: any) => {
         const formattedRow: any = {};
         for (const key in row) {
-          const cleanedKey = key.replace(/\n/g, '').trim(); // Normalize the key
-          const mappedKey = headerMapping[cleanedKey];
+          const cleanedKey = key.replace(/\n/g, '').trim();
+          const mappedKey = MasterDevelopmentheaderMapping[cleanedKey];
           if (mappedKey) {
             formattedRow[mappedKey] = row[key];
           }
         }
 
-        // Calculate the totalLandSize field as the sum of specific areas
         formattedRow.totalAreaSqFt =
           (formattedRow.buaAreaSqFt || 0) +
           (formattedRow.facilitiesAreaSqFt || 0) +
           (formattedRow.amentiesAreaSqFt || 0);
 
-        // Validate that all required fields are present
         const requiredFields = [
+          'country',
+          'city',
           'roadLocation',
           'developmentName',
           'locationQuality',
@@ -322,84 +345,116 @@ export class MasterDevelopmentService {
         return formattedRow;
       });
 
-      // Step 1: Deduplicate in-memory (e.g., using a Set to check unique fields)
+      // === Pre-check: Fetch existing developmentNames in one query ===
+      const allDevelopmentNames = formattedData.map(
+        (row) => row.developmentName,
+      );
+
+      const existingDevelopments = await this.MasterDevelopmentModel.find(
+        { developmentName: { $in: allDevelopmentNames } },
+        'developmentName',
+      ).lean();
+
+      const existingNameSet = new Set(
+        existingDevelopments.map((r) => r.developmentName),
+      );
+
+      // === Pre-filter: remove duplicates BEFORE inserting ===
+      let duplicates = 0;
+      const seenDevelopmentNames = new Set();
+
+      const filteredData = formattedData.filter((row) => {
+        if (existingNameSet.has(row.developmentName)) {
+          // Duplicate because it exists in DB
+          duplicates++;
+          return false;
+        }
+
+        if (seenDevelopmentNames.has(row.developmentName)) {
+          // Duplicate inside uploaded file
+          duplicates++;
+          return false;
+        }
+
+        // If not seen, add to seen set
+        seenDevelopmentNames.add(row.developmentName);
+        return true; // Keep this one
+      });
+
+      if (filteredData.length === 0) {
+        // No new data to insert
+        fs.unlinkSync(filePath);
+        return {
+          success: true,
+          totalEntries: jsonData.length,
+          insertedEntries: 0,
+          skippedDuplicateEntires: existingDevelopments.length + duplicates,
+        };
+      }
+
+      // Deduplicate in-memory (optional if needed)
       const uniqueRecords = new Map();
-      formattedData.forEach((dto) => {
+      filteredData.forEach((dto) => {
         if (this.validateEntry(dto)) {
-          uniqueRecords.set(dto.developmentName, dto); // Only add valid records
-        } else {
-          console.log(`Skipping invalid entry`);
+          uniqueRecords.set(dto.developmentName, dto);
         }
       });
 
-      let insertedDataCount = 0;
-      let duplicateDataCount = 0;
-      // Step 2: Bulk insert using database methods (adjust as per your database)
       const bulkInsertData = Array.from(uniqueRecords.values());
 
-      // Step 3: Split the data into chunks of 5,000 records
       const chunkSize = 5000;
+      let insertedDataCount = 0;
+
       for (let i = 0; i < bulkInsertData.length; i += chunkSize) {
         const chunk = bulkInsertData.slice(i, i + chunkSize);
 
-        // STEP 1: Get existing names for this chunk
-        const existingNames = await this.MasterDevelopmentModel.find(
-          { developmentName: { $in: chunk.map((row) => row.developmentName) } },
-          'developmentName',
-        ).lean();
+        if (chunk.length === 0) continue;
 
-        console.log('existingNames', existingNames);
-
-        const existingNameSet = new Set(
-          existingNames.map((r) => r.developmentName),
-        );
-        console.log('existingNameSet', existingNameSet);
-
-        // STEP 2: Filter out duplicates
-        const filteredChunk = chunk.filter(
-          (row) => !existingNameSet.has(row.developmentName),
-        );
-
-        console.log('filteredChunk', filteredChunk);
-        insertedDataCount += filteredChunk.length;
-        duplicateDataCount += existingNames.length;
-
-        if (filteredChunk.length === 0) continue;
-
-        // STEP 3: Insert remaining
         try {
-          await this.MasterDevelopmentModel.insertMany(filteredChunk, {
+          await this.MasterDevelopmentModel.insertMany(chunk, {
             ordered: false,
           });
+          insertedDataCount += chunk.length;
         } catch (error) {
           console.error(`Error inserting chunk starting at index ${i}:`, error);
         }
       }
 
-      // After processing, delete the file
-      fs.unlinkSync(filePath); // This will delete the file from the filesystem
+      fs.unlinkSync(filePath);
 
       return {
         success: true,
         totalEntries: jsonData.length,
         insertedEntries: insertedDataCount,
-        skippedDuplicateEntires: duplicateDataCount,
+        skippedDuplicateEntires: existingDevelopments.length + duplicates,
       };
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (error) {
-      // Delete the file if an error occurs
       if (fs.existsSync(filePath)) {
-        fs.unlinkSync(filePath); // Ensure the file is deleted in case of an error
+        fs.unlinkSync(filePath);
       }
-      if (error.response.statusCode == 400) {
+      if (error.response?.statusCode === 400) {
         throw new BadRequestException(
           'File format is not correct. Missing or empty fields.',
         );
       }
-      // Throw Internal Server Error
       throw new InternalServerErrorException(
         error?.response?.message || 'Internal server error occurred.',
       );
+    }
+  }
+
+  async getAllMasterDevelopment(
+    fields: string[],
+  ): Promise<MasterDevelopment[]> {
+    try {
+      const projection = fields.join(' ');
+      const development = await this.MasterDevelopmentModel.find()
+        .select(projection)
+        .exec();
+      return development;
+    } catch (error) {
+      console.error('Error finding MasterDevelopment by ID:', error);
+      return [];
     }
   }
 }

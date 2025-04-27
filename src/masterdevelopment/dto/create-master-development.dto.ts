@@ -1,4 +1,6 @@
 export class CreateMasterDevelopmentDto {
+  country: string;
+  city: string;
   roadLocation: string;
   developmentName: string;
   locationQuality: string;

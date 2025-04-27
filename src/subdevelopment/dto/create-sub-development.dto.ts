@@ -3,15 +3,15 @@ export class CreateSubDevelopmentDto {
   subDevelopment: string;
   plotNumber: number;
   plotHeight: number;
-  plotPermission: string;
   plotSizeSqFt: number;
   plotBUASqFt: number;
   plotStatus: string;
   buaAreaSqFt: string;
   facilitiesAreaSqFt: string;
   amenitiesAreaSqFt: string;
-  totalSizeSqFt: string;
+  totalAreaSqFt: string;
   pictures?: string[];
   facilitiesCategories: string[];
   amentiesCategories: string[];
+  plotPermission: string[];
 }

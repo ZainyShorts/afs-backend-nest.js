@@ -3,7 +3,6 @@
 export class SubDevelopmentFilterInput {
   subDevelopment?: string;
   plotNumber?: number;
-  plotPermission?: string;
   plotStatus?: string;
 
   buaAreaSqFtRange?: { min?: number; max?: number };
@@ -11,6 +10,7 @@ export class SubDevelopmentFilterInput {
 
   facilitiesCategories?: string[];
   amentiesCategories?: string[];
+  plotPermission?: string[];
 
   startDate?: string;
   endDate?: string;
