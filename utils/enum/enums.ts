@@ -16,6 +16,18 @@ export enum LocationQuality {
   C = 'C',
 }
 
+export enum ProjectQuality {
+  A = 'A',
+  B = 'B',
+  C = 'C',
+}
+
+export enum SalesStatus {
+  PRIMARY = 'Primary',
+  OFF_PLANN_RESALE = 'Off Plan Resale',
+  RESALE = 'Resale',
+}
+
 export enum FacilitiesCategory {
   SHOPS = 'Shops',
   SCHOOL = 'School',

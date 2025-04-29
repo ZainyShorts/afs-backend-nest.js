@@ -12,6 +12,7 @@ import { PropertyModule } from './property/property.module';
 import { MasterDevelopmentModule } from './masterdevelopment/masterdevelopment.module';
 import { DocumentModule } from './document/document.module';
 import { SubDevelopmentModule } from './subdevelopment/subdevelopment.module';
+import { ProjectModule } from './project/project.module';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { SubDevelopmentModule } from './subdevelopment/subdevelopment.module';
     MasterDevelopmentModule,
     DocumentModule,
     SubDevelopmentModule,
+    ProjectModule,
   ],
   controllers: [AppController, EventsController],
   providers: [AppService, AppResolver, EventsGateway],
