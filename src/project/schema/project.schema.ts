@@ -3,9 +3,37 @@ import { Schema, Prop, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
 import { MasterDevelopment } from 'src/masterdevelopment/schema/master-development.schema';
 import { SubDevelopment } from 'src/subdevelopment/schema/subdevelopment.schema';
-import { ProjectQuality, PropertyType, SalesStatus } from 'utils/enum/enums';
+import {
+  PlotStatus,
+  ProjectQuality,
+  PropertyType,
+  SalesStatus,
+} from 'utils/enum/enums';
 
 export type ProjectDocument = Project & Document;
+
+export class Plot {
+  @Prop()
+  plotNumber: number;
+
+  @Prop()
+  plotHeight: number;
+
+  @Prop({ enum: PropertyType, type: [String] })
+  plotPermission: string[];
+
+  @Prop()
+  plotSizeSqFt: number;
+
+  @Prop()
+  plotBUASqFt: number;
+
+  @Prop({ enum: PlotStatus })
+  plotStatus: string;
+
+  @Prop()
+  buaAreaSqFt: number;
+}
 
 @Schema({ timestamps: true })
 export class Project {
@@ -14,6 +42,9 @@ export class Project {
 
   @Prop({ type: Types.ObjectId, ref: 'SubDevelopment' })
   subDevelopment: SubDevelopment;
+
+  @Prop({ type: Plot })
+  plot: Plot;
 
   @Prop({ enum: PropertyType, required: true })
   propertyType: PropertyType;

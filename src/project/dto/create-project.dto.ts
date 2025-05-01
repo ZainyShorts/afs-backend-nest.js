@@ -6,8 +6,37 @@ import {
   IsNumber,
   IsOptional,
   IsNotEmpty,
+  IsObject,
 } from 'class-validator';
-import { ProjectQuality, PropertyType, SalesStatus } from 'utils/enum/enums';
+import {
+  PlotStatus,
+  ProjectQuality,
+  PropertyType,
+  SalesStatus,
+} from 'utils/enum/enums';
+
+export class PlotDto {
+  @IsNumber()
+  plotNumber: number;
+
+  @IsNumber()
+  plotHeight: number;
+
+  @IsArray()
+  plotPermission: PropertyType[];
+
+  @IsNumber()
+  plotSizeSqFt: number;
+
+  @IsNumber()
+  plotBUASqFt: number;
+
+  @IsString()
+  plotStatus: PlotStatus;
+
+  @IsNumber()
+  buaAreaSqFt: number;
+}
 
 export class CreateProjectDto {
   @IsEnum(PropertyType)
@@ -20,6 +49,9 @@ export class CreateProjectDto {
 
   @IsArray()
   facilityCategories?: string[];
+
+  @IsObject()
+  plot?: PlotDto;
 
   @IsArray()
   amenitiesCategories?: string[];

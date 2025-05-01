@@ -159,6 +159,20 @@ export class ProjectService {
         throw new NotFoundException(`Project with ID ${id} not found`);
       }
 
+      if (
+        updateProjectDto.projectName &&
+        updateProjectDto.projectName != project.projectName
+      ) {
+        const exists = await this.projectModel.findOne({
+          developmentName: updateProjectDto.projectName,
+        });
+        if (exists) {
+          throw new ConflictException(
+            'A record with the same Project Name already exists.',
+          );
+        }
+      }
+
       // If projectName is being updated, check for uniqueness
       if (
         updateProjectDto.projectName &&
