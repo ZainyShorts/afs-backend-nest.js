@@ -51,6 +51,7 @@ export class ProjectService {
   ): Promise<any> {
     try {
       const query: any = {};
+      let developerFilter = false;
 
       if (filter) {
         if (filter.propertyType) {
@@ -77,6 +78,34 @@ export class ProjectService {
           query.amenitiesCategories = { $in: filter.amenitiesCategories };
         }
 
+        if (filter.launchDate) {
+          query.launchDate = filter.launchDate;
+        }
+
+        if (filter.completionDate) {
+          query.completionDate = filter.completionDate;
+        }
+
+        if (filter.uponCompletion) {
+          query.uponCompletion = filter.uponCompletion;
+        }
+
+        if (filter.installmentDate) {
+          query.installmentDate = filter.installmentDate;
+        }
+
+        if (filter.postHandOver) {
+          query.postHandOver = filter.postHandOver;
+        }
+
+        if (filter.salesStatus) {
+          query.salesStatus = filter.salesStatus;
+        }
+
+        if (filter.percentOfConstruction) {
+          query.percentOfConstruction = filter.percentOfConstruction;
+        }
+
         if (filter.startDate || filter.endDate) {
           query.createdAt = {};
           if (filter.startDate) {
@@ -101,13 +130,30 @@ export class ProjectService {
         populateFields = populate.split(',').map((field) => field.trim());
       }
 
-      const data = await this.projectModel
+      let data = await this.projectModel
         .find(query)
         .populate(populateFields)
         .sort({ [sortBy]: sortDirection })
         .skip((page - 1) * limit)
         .limit(limit)
         .exec();
+
+      if (filter.masterDevelopment) {
+        data = data.filter((item) => {
+          const regex = new RegExp(filter.masterDevelopment, 'i');
+          const test = regex.test(
+            item.masterDevelopment?.developmentName || '',
+          );
+          return test;
+        });
+      }
+
+      if (filter.subDevelopment) {
+        data = data.filter((item) => {
+          const regex = new RegExp(filter.subDevelopment, 'i');
+          return regex.test(item.subDevelopment?.subDevelopment || '');
+        });
+      }
 
       return {
         data,
