@@ -1,15 +1,3 @@
-export enum propertyTypes {
-  TownHouse = 'Townhouse',
-  Education = 'Education',
-  Office = 'Office',
-  Shop = 'Shop',
-  Nursery = 'Nursery',
-  Villa = 'Villa',
-  StackHome = 'Stack Home',
-  Gymnasium = 'Gymnasium',
-  // - = "-"
-}
-
 export enum LocationQuality {
   A = 'A',
   B = 'B',
@@ -145,4 +133,26 @@ export enum AmenitiesCategory {
   PEST_CONTROL = 'Pest control & Fumigation Support',
   GREEN_CERTIFICATION = 'Green Building Certification',
   RECYCLING_POINTS = 'Community Recycling Points',
+}
+
+export enum unitType {
+  STUDIO = 'Studio',
+  ONE_BEDROOM = '1 BR',
+  TWO_BEDROOM = '2 BR',
+  THREE_BEDROOM = '3 BR',
+  FOUR_BEDROOM = '4 BR',
+  FIVE_BEDROOM = '5 BR',
+  SIX_BEDROOM = '6 BR',
+  SEVEN_BEDROOM = '7 BR',
+  EIGHT_BEDROOM = '8 BR',
+}
+
+export enum UnitPurpose {
+  RENT = 'Rent',
+  SELL = 'Sell',
+  MANAGE = 'Manage',
+  DEVELOP = 'Develop',
+  VALUATION = 'Valuation',
+  HOLD = 'Hold',
+  PENDING = 'Pending',
 }

@@ -1,161 +1,88 @@
-import { Field, ObjectType } from '@nestjs/graphql';
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
-import { User } from '../../user/schema/user.schema';
+import { MasterDevelopment } from 'src/masterdevelopment/schema/master-development.schema';
+import { Project } from 'src/project/schema/project.schema';
+import { SubDevelopment } from 'src/subdevelopment/schema/subdevelopment.schema';
+import { UnitPurpose, unitType } from 'utils/enum/enums';
 
-// Agent Schema
-@ObjectType()
 @Schema({
   timestamps: true,
 })
 export class Property extends Document {
-  //   @Field(() => Document)
-  //   @Prop({ type: Types.ObjectId, ref: 'Document' })
-  //   documents: Types.ObjectId;
+  @Prop({ type: Types.ObjectId, ref: 'MasterDevelopment', required: true })
+  masterDevelopment: MasterDevelopment;
 
-  //   @Field(() => Agent)
-  //   @Prop({ type: Types.ObjectId, ref: 'Agent' })
-  //   agent: Types.ObjectId;
+  @Prop({ type: Types.ObjectId, ref: 'SubDevelopment' })
+  subDevelopment: SubDevelopment;
 
-  //   @Field(() => Maintenance)
-  //   @Prop({ type: Types.ObjectId, ref: 'Maintenance' })
-  //   maintenance: Types.ObjectId;
+  @Prop({ type: Types.ObjectId, ref: 'ProjectDevelopment', required: true })
+  project: Project;
 
-  //   @Field(() => Reviews)
-  //   @Prop({ type: Types.ObjectId, ref: 'Reviews' })
-  //   reviews: Types.ObjectId;
-
-  //   @Field(() => Transactions)
-  //   @Prop({ type: Types.ObjectId, ref: 'Transactions' })
-  //   transactions: Types.ObjectId;
-
-  // @Field(() => Leads)
-  //   @Prop({ type: Types.ObjectId, ref: 'Leads' })
-  //   leads: Types.ObjectId;
-
-  // @Field(() => Appointment)
-  //   @Prop({ type: Types.ObjectId, ref: 'Appointment' })
-  //   appointment: Types.ObjectId;
-
-  // @Field(() => Invoice)
-  //   @Prop({ type: Types.ObjectId, ref: 'Invoice' })
-  //   invoice: Types.ObjectId;
-
-  // @Field(() => Client)
-  //   @Prop({ type: Types.ObjectId, ref: 'Client' })
-  //   client: Types.ObjectId;
-
-  // @Field(() => Contract)
-  //   @Prop({ type: Types.ObjectId, ref: 'Contract' })
-  //   contract: Types.ObjectId;
-
-  //Document id
-  @Field(() => String, { nullable: false })
-  _id: Types.ObjectId;
-
-  //Reference other  documents
-  @Field(() => User)
-  @Prop({ type: Types.ObjectId, ref: 'User' })
-  userId: Types.ObjectId;
-
-  @Field(() => String)
-  @Prop({ type: String })
-  clerkId: string;
-
-  @Field(() => String, { nullable: true })
-  @Prop({ type: String, default: null })
-  roadLocation: string;
-
-  @Field(() => String, { nullable: true })
-  @Prop({ type: String, default: null })
-  developmentName: string;
-
-  @Field(() => String, { nullable: true })
-  @Prop({ type: String, default: null })
-  subDevelopmentName: string;
-
-  @Field(() => String, { nullable: true })
-  @Prop({ type: String, default: null })
-  projectName: string;
-
-  @Field(() => String)
-  @Prop({
-    type: String,
-    // , enum: propertyTypes
-  })
-  propertyType: string;
-
-  @Field(() => String, { nullable: true })
-  @Prop({ type: String, default: null })
-  propertyHeight: string;
-
-  @Field(() => String, { nullable: true })
-  @Prop({ type: String, default: null })
-  projectLocation: string;
-
-  @Field(() => String, { nullable: true })
-  @Prop({ type: String, default: null })
+  @Prop({ type: String, required: true })
   unitNumber: string;
 
-  @Field(() => Number, { nullable: true })
-  @Prop({ type: Number, default: null })
-  bedrooms: number;
+  @Prop({ type: Number })
+  unitHeight: number;
 
-  @Field(() => String, { nullable: true })
-  @Prop({ type: String, default: null })
-  unitLandSize: string;
+  @Prop({ type: String })
+  unitInternalDesign: string;
 
-  @Field(() => Number, { nullable: true })
-  @Prop({ type: Number, default: null })
-  unitBua: number;
+  @Prop({ type: String })
+  unitExternalDesign: string;
 
-  @Field(() => String, { nullable: true })
-  @Prop({ type: String, default: null })
-  unitLocation: string;
+  @Prop({ type: Number })
+  plotSizeSqFt: number;
 
-  @Field(() => [String], { nullable: true })
+  @Prop({ type: Number })
+  BuaSqFt: number;
+
+  @Prop({ type: String, enum: unitType })
+  unitType: string;
+
   @Prop({ type: [String] })
   unitView: string[];
 
-  @Field(() => [String], { nullable: true })
   @Prop({ type: [String] })
-  propertyImages: string[];
+  pictures: string[];
 
-  @Field(() => String, { nullable: true })
-  @Prop({ type: String, default: null })
-  Purpose: string;
+  @Prop({ type: String, enum: UnitPurpose, required: true })
+  unitPurpose: string;
 
-  @Field(() => String, { nullable: true })
-  @Prop({ type: String, default: null })
-  vacancyStatus?: string;
+  @Prop({ type: String })
+  listingDate: string;
 
-  @Field(() => Number, { nullable: true })
+  @Prop({ type: String })
+  chequeFrequency: string;
+
   @Prop({ type: Number, default: null })
-  primaryPrice: number;
+  rentalPrice: number;
 
-  @Field(() => Number, { nullable: true })
   @Prop({ type: Number, default: null })
-  resalePrice: number;
+  salePrice: number;
 
-  @Field(() => Number, { nullable: true })
-  @Prop({ type: Number, default: null })
+  // unit Tenancy Detail
+
+  @Prop({ type: String })
+  rentedAt: string;
+
+  @Prop({ type: String })
+  rentedTill: string;
+
+  @Prop({ type: String })
+  vacantOn: string;
+
+  // Payment Detail
+  @Prop({ type: Number })
+  originalPrice: number;
+
+  @Prop({ type: String })
+  paidTODevelopers: string;
+
+  @Prop({ type: String })
+  payableTODevelopers: string;
+
+  @Prop({ type: Number })
   premiumAndLoss: number;
-
-  @Field(() => Number, { nullable: true })
-  @Prop({ type: Number, default: null })
-  Rent: number;
-
-  @Field(() => Number, { nullable: true })
-  @Prop({ type: Number, default: null })
-  noOfCheques: number;
-
-  //   Boolean
-  @Field(() => Boolean)
-  @Prop({ type: Boolean, default: false })
-  listed: boolean;
-
-  @Field(() => Date) // Make createdAt nullable
-  createdAt: Date;
 }
 
 export const PropertySchema = SchemaFactory.createForClass(Property);

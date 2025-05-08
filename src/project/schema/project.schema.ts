@@ -88,27 +88,6 @@ export class Project {
   @Prop({ default: 'N/A', trim: true })
   postHandOver: string;
 
-  @Prop({ trim: true }) shops: string;
-  @Prop({ trim: true }) offices: string;
-  @Prop({ trim: true }) studios: string;
-  @Prop({ trim: true }) oneBr: string;
-  @Prop({ trim: true }) twoBr: string;
-  @Prop({ trim: true }) threeBr: string;
-  @Prop({ trim: true }) fourBr: string;
-  @Prop({ trim: true }) fiveBr: string;
-  @Prop({ trim: true }) sixBr: string;
-  @Prop({ trim: true }) sevenBr: string;
-  @Prop({ trim: true }) eightBr: string;
-
-  @Prop({ default: 0 })
-  total: number;
-
-  @Prop({ default: 0 })
-  sold: number;
-
-  @Prop({ default: 0 })
-  available: number;
-
   @Prop([String])
   pictures: string[];
 }

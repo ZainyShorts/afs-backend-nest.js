@@ -51,9 +51,22 @@ export class ProjectService {
   ): Promise<any> {
     try {
       const query: any = {};
-      let developerFilter = false;
 
       if (filter) {
+        // Update service's findAll method with Plot filters:
+
+        if (filter.plotNumber !== undefined) {
+          query['plot.plotNumber'] = filter.plotNumber;
+        }
+
+        if (filter.plotStatus) {
+          query['plot.plotStatus'] = filter.plotStatus;
+        }
+
+        if (filter.plotPermission?.length > 0) {
+          query['plot.plotPermission'] = { $in: filter.plotPermission };
+        }
+
         if (filter.propertyType) {
           query.propertyType = filter.propertyType;
         }

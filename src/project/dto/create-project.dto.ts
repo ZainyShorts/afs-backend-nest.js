@@ -4,7 +4,6 @@ import {
   IsEnum,
   IsArray,
   IsNumber,
-  IsOptional,
   IsNotEmpty,
   IsObject,
 } from 'class-validator';
@@ -86,27 +85,6 @@ export class CreateProjectDto {
 
   @IsString()
   postHandOver?: string;
-
-  @IsString() @IsOptional() shops?: string;
-  @IsString() @IsOptional() offices?: string;
-  @IsString() @IsOptional() studios?: string;
-  @IsString() @IsOptional() oneBr?: string;
-  @IsString() @IsOptional() twoBr?: string;
-  @IsString() @IsOptional() threeBr?: string;
-  @IsString() @IsOptional() fourBr?: string;
-  @IsString() @IsOptional() fiveBr?: string;
-  @IsString() @IsOptional() sixBr?: string;
-  @IsString() @IsOptional() sevenBr?: string;
-  @IsString() @IsOptional() eightBr?: string;
-
-  @IsNumber()
-  total?: number;
-
-  @IsNumber()
-  sold?: number;
-
-  @IsNumber()
-  available?: number;
 
   @IsArray()
   pictures?: string[];

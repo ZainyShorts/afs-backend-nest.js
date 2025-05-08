@@ -16,4 +16,9 @@ export class ProjectFilterInput {
   endDate?: string;
   facilityCategories?: string[];
   amenitiesCategories?: string[];
+
+  // New Plot filters
+  plotNumber?: number;
+  plotStatus?: string;
+  plotPermission?: string[];
 }

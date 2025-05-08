@@ -1,32 +1,30 @@
-import { ObjectType, Field } from '@nestjs/graphql';
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document, Types } from 'mongoose';
+// user.schema.ts
+import { Schema, Document } from 'mongoose';
 
-
-@Schema({
-  timestamps: true,
-})
-
-@ObjectType() // Add this decorator
-export class User extends Document {
-  @Field(() => String) 
-  @Prop({ type: Types.ObjectId }) 
-  deScopeId: string;
-
-  @Field(() => String) 
-  @Prop({ type: String, required: true })
-  username: string;
-
-  @Field(() => String) 
-  @Prop({ type: String, required: true, unique: [true, "Duplicate Email Entry"] })
-  email: string;
-
-  @Field(() => Boolean) 
-  @Prop({ type: Boolean, default:false })
-  subscription: boolean;
-  
+export enum Role {
+  ADMIN = 'admin',
+  MANAGER = 'manager',
+  EMPLOYEE = 'employee',
+  AGENT = 'agent',
 }
 
+export interface User extends Document {
+  name: string;
+  email: string;
+  password: string;
+  role: Role;
+  access: boolean;
+  lastLogin: Date;
+}
 
-
-export const UserSchema = SchemaFactory.createForClass(User);
+export const UserSchema = new Schema(
+  {
+    name: { type: String, required: true },
+    email: { type: String, required: true, unique: true },
+    password: { type: String, required: true },
+    role: { type: String, enum: Role, default: Role.EMPLOYEE },
+    access: { type: Boolean, default: true },
+    lastLogin: { type: Date, default: null },
+  },
+  { timestamps: true },
+);

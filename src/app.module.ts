@@ -13,6 +13,7 @@ import { MasterDevelopmentModule } from './masterdevelopment/masterdevelopment.m
 import { DocumentModule } from './document/document.module';
 import { SubDevelopmentModule } from './subdevelopment/subdevelopment.module';
 import { ProjectModule } from './project/project.module';
+import { UserModule } from './user/user.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { ProjectModule } from './project/project.module';
       autoSchemaFile: true,
       playground: true,
     }),
+    UserModule,
     PropertyModule,
     MasterDevelopmentModule,
     DocumentModule,

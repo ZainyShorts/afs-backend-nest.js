@@ -1,10 +1,15 @@
-import { IsString, IsNumber, IsBoolean, IsArray, IsEnum, IsMongoId } from 'class-validator';
+import {
+  IsString,
+  IsNumber,
+  IsBoolean,
+  IsArray,
+  IsEnum,
+} from 'class-validator';
 import { Field, InputType } from '@nestjs/graphql';
-import { propertyTypes } from 'utils/enum/enums';
+import { PropertyType } from 'utils/enum/enums';
 
 @InputType()
 export class AddPropertyDto {
-
   @Field(() => String)
   @IsString()
   clerkId: string;
@@ -26,7 +31,7 @@ export class AddPropertyDto {
   projectName: string;
 
   @Field(() => String)
-  @IsEnum(propertyTypes)
+  @IsEnum(PropertyType)
   propertyType: string;
 
   @Field(() => String)
