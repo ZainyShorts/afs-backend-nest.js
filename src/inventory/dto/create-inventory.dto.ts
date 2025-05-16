@@ -9,23 +9,7 @@ import { Field, InputType } from '@nestjs/graphql';
 import { PropertyType } from 'utils/enum/enums';
 
 @InputType()
-export class AddPropertyDto {
-  @Field(() => String)
-  @IsString()
-  clerkId: string;
-
-  @Field(() => String)
-  @IsString()
-  roadLocation: string;
-
-  @Field(() => String)
-  @IsString()
-  developmentName: string;
-
-  @Field(() => String)
-  @IsString()
-  subDevelopmentName: string;
-
+export class CreateInventorytDto {
   @Field(() => String)
   @IsString()
   projectName: string;

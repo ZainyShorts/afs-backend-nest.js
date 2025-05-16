@@ -1,21 +1,13 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
-import { MasterDevelopment } from 'src/masterdevelopment/schema/master-development.schema';
 import { Project } from 'src/project/schema/project.schema';
-import { SubDevelopment } from 'src/subdevelopment/schema/subdevelopment.schema';
 import { UnitPurpose, unitType } from 'utils/enum/enums';
 
 @Schema({
   timestamps: true,
 })
-export class Property extends Document {
-  @Prop({ type: Types.ObjectId, ref: 'MasterDevelopment', required: true })
-  masterDevelopment: MasterDevelopment;
-
-  @Prop({ type: Types.ObjectId, ref: 'SubDevelopment' })
-  subDevelopment: SubDevelopment;
-
-  @Prop({ type: Types.ObjectId, ref: 'ProjectDevelopment', required: true })
+export class Inventory extends Document {
+  @Prop({ type: Types.ObjectId, ref: 'Project', required: true })
   project: Project;
 
   @Prop({ type: String, required: true })
@@ -85,4 +77,4 @@ export class Property extends Document {
   premiumAndLoss: number;
 }
 
-export const PropertySchema = SchemaFactory.createForClass(Property);
+export const InventorySchema = SchemaFactory.createForClass(Inventory);

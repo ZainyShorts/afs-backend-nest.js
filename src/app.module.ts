@@ -8,7 +8,7 @@ import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
 import { AppResolver } from './app.resolver';
 import { EventsGateway } from './events/events.gateway';
 import { EventsController } from './events/events.controller';
-import { PropertyModule } from './property/property.module';
+import { InventoryModule } from './inventory/inventory.module';
 import { MasterDevelopmentModule } from './masterdevelopment/masterdevelopment.module';
 import { DocumentModule } from './document/document.module';
 import { SubDevelopmentModule } from './subdevelopment/subdevelopment.module';
@@ -27,7 +27,7 @@ import { UserModule } from './user/user.module';
       playground: true,
     }),
     UserModule,
-    PropertyModule,
+    InventoryModule,
     MasterDevelopmentModule,
     DocumentModule,
     SubDevelopmentModule,

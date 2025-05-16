@@ -53,20 +53,20 @@ export class ProjectService {
       const query: any = {};
 
       if (filter) {
-        // Update service's findAll method with Plot filters:
+        // Plot filters
+        // if (filter.plotNumber !== undefined) {
+        //   query['plot.plotNumber'] = filter.plotNumber;
+        // }
 
-        if (filter.plotNumber !== undefined) {
-          query['plot.plotNumber'] = filter.plotNumber;
-        }
+        // if (filter.plotStatus) {
+        //   query['plot.plotStatus'] = filter.plotStatus;
+        // }
 
-        if (filter.plotStatus) {
-          query['plot.plotStatus'] = filter.plotStatus;
-        }
+        // if (filter.plotPermission?.length > 0) {
+        //   query['plot.plotPermission'] = { $in: filter.plotPermission };
+        // }
 
-        if (filter.plotPermission?.length > 0) {
-          query['plot.plotPermission'] = { $in: filter.plotPermission };
-        }
-
+        // Other Project filters
         if (filter.propertyType) {
           query.propertyType = filter.propertyType;
         }
@@ -137,7 +137,6 @@ export class ProjectService {
           ? await this.projectModel.countDocuments(query)
           : await this.projectModel.estimatedDocumentCount();
 
-      // Parse 'populate' query parameter to allow for multiple population
       let populateFields = [];
       if (populate) {
         populateFields = populate.split(',').map((field) => field.trim());
@@ -154,19 +153,48 @@ export class ProjectService {
       if (filter.masterDevelopment) {
         data = data.filter((item) => {
           const regex = new RegExp(filter.masterDevelopment, 'i');
-          const test = regex.test(
-            item.masterDevelopment?.developmentName || '',
-          );
-          return test;
+          return regex.test(item.masterDevelopment?.developmentName || '');
         });
       }
 
       if (filter.subDevelopment) {
+        populateFields.push('subDevelopment');
         data = data.filter((item) => {
           const regex = new RegExp(filter.subDevelopment, 'i');
           return regex.test(item.subDevelopment?.subDevelopment || '');
         });
+
+        console.log('before');
+
+        console.log(data);
+
+        // Scenario 2: Further filtering by plot details within subDevelopment
+        // data = data.filter((item) => {
+        //   const subDevPlot = item.subDevelopment;
+        //   if (!subDevPlot) return true;
+
+        //   console.log(subDevPlot);
+
+        //   if (
+        //     filter.plotNumber !== undefined &&
+        //     subDevPlot.plotNumber !== filter.plotNumber
+        //   )
+        //     return false;
+        //   if (filter.plotStatus && subDevPlot.plotStatus !== filter.plotStatus)
+        //     return false;
+        //   if (
+        //     filter.plotPermission?.length > 0 &&
+        //     !subDevPlot.plotPermission.some((permission) =>
+        //       filter.plotPermission.includes(permission),
+        //     )
+        //   )
+        //     return false;
+
+        //   return true;
+        // });
       }
+
+      console.log(data);
 
       return {
         data,
