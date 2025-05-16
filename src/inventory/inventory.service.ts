@@ -74,24 +74,6 @@ export class InventoryService {
     try {
       const query: any = {};
       if (filter) {
-        // if (filter.masterDevelopment) {
-        //   const masterDevelopmentDocument = await this.masterDevelopmentModel
-        //     .findOne({
-        //       developmentName: filter.masterDevelopment,
-        //     })
-        //     .select('_id');
-        //   console.log(masterDevelopmentDocument);
-        //   query.masterDevelopment = masterDevelopmentDocument._id;
-        // }
-
-        // if (filter.subDevelopment) {
-        //   const subDevelopmentDocument =
-        //     await this.subDevelopmenttModel.findOne({
-        //       subDevelopment: filter.subDevelopment,
-        //     });
-        //   query.subDevelopment = subDevelopmentDocument._id;
-        // }
-
         if (filter.project) {
           const projectDocument = await this.projectModel
             .findOne({
@@ -183,7 +165,7 @@ export class InventoryService {
           if (populateFields.includes('masterDevelopment')) {
             nestedPopulate.push({
               path: 'masterDevelopment',
-              select: 'developerName roadLocation',
+              select: 'developmentName roadLocation',
             });
           }
           if (populateFields.includes('subDevelopment')) {
@@ -228,7 +210,47 @@ export class InventoryService {
         });
       }
 
-      const data = await queryBuilder.exec();
+      let data = await queryBuilder.exec();
+
+      if (filter.developmentName) {
+        const masterDevelopmentDocument: MasterDevelopment =
+          await this.masterDevelopmentModel
+            .findOne({
+              developmentName: filter.developmentName,
+            })
+            .select('developmentName');
+
+        if (masterDevelopmentDocument) {
+          data = data.filter(
+            (doc) =>
+              doc.project?.masterDevelopment?.developmentName ===
+              masterDevelopmentDocument.developmentName,
+          );
+        } else {
+          // If no such masterDevelopment found, no results should match
+          data = [];
+        }
+      }
+
+      if (filter.subDevelopment) {
+        const subDevelopmentDocument: SubDevelopment =
+          await this.subDevelopmenttModel
+            .findOne({
+              subDevelopment: filter.subDevelopment,
+            })
+            .select('subDevelopment');
+
+        if (subDevelopmentDocument) {
+          data = data.filter(
+            (doc) =>
+              doc.project?.subDevelopment?.subDevelopment ===
+              subDevelopmentDocument.subDevelopment,
+          );
+        } else {
+          // If no such masterDevelopment found, no results should match
+          data = [];
+        }
+      }
 
       return {
         data,

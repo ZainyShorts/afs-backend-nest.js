@@ -1,5 +1,5 @@
 export class InventoryFilterInput {
-  masterDevelopment?: string;
+  developmentName?: string;
   subDevelopment?: string;
   project?: string;
   unitNumber?: string;
@@ -14,6 +14,7 @@ export class InventoryFilterInput {
   unitPurpose?: string;
   listingDate?: string;
   chequeFrequency?: string;
+  roadLocation?: string;
   rentalPriceRange?: {
     min?: number;
     max?: number;
