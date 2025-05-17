@@ -441,7 +441,7 @@ export class InventoryService {
 
       const sheetName = workbook.SheetNames[0];
       const sheetData = xlsx.utils.sheet_to_json(workbook.Sheets[sheetName]);
-
+      const projectNamelist: string[] = [];
       const toCamelCase = (str: string) =>
         str
           .replace(/\s(.)/g, (match) => match.toUpperCase())
@@ -472,6 +472,12 @@ export class InventoryService {
             return;
           }
 
+          if (camelKey === 'purpose') {
+            camelKey = 'unitPurpose';
+            newRow[camelKey] = row[key];
+            return;
+          }
+
           if (camelKey === 'unitView') {
             const unitViewList = row[key];
             if (unitViewList.includes(',')) {
@@ -496,10 +502,32 @@ export class InventoryService {
 
       for (const [index, data] of formattedSheetData.entries()) {
         // Validate required fields
+
+        if (!data.unitNumber) {
+          return {
+            success: false,
+            msg: `Missing value of Unit Number row: ${index}`,
+          };
+        }
+
+        if (!data.unitPurpose) {
+          return {
+            success: false,
+            msg: `Missing value of Unit Purpose row: ${index}`,
+          };
+        }
+
         if (data.plotSizeSqFt && typeof data.plotSizeSqFt == 'string') {
           return {
             success: false,
-            msg: `Invalid type of plotSizeSqFt row: ${index}`,
+            msg: `Invalid type of Plot Size SqFt row: ${index}`,
+          };
+        }
+
+        if (data.plotSizeSqFt && typeof data.plotSizeSqFt == 'string') {
+          return {
+            success: false,
+            msg: `Invalid type of Plot Size SqFt row: ${index}`,
           };
         }
 
@@ -557,49 +585,67 @@ export class InventoryService {
             unitViewArray = data.unitView;
           }
         }
-
-        // Find project by projectName
-        let project = null;
-        if (data.projectName) {
-          project = await this.projectModel
-            .findOne({ name: data.projectName })
-            .exec();
-        }
+        if (data.projectName) projectNamelist.push(data.projectName);
 
         insertion.push({
           projectName: data.projectName,
           unitNumber: data.unitNumber,
           unitHeight: data.unitHeight,
           unitPurpose: data.unitPurpose,
-          noOfBedRooms: data.noOfBedRooms,
+          unitInternalDesign: data.unitInternalDesign,
+          unitExternalDesign: data.unitExternalDesign,
           plotSizeSqFt: data.plotSizeSqFt,
           BuaSqFt: data.BuaSqFt,
-          unitLocation: data.unitLocation || null,
+          noOfBedRooms: data.noOfBedRooms,
           unitView: unitViewArray,
-          propertyImages: data.propertyImages
-            ? Array.isArray(data.propertyImages)
-              ? data.propertyImages
-              : [data.propertyImages]
-            : [],
-          vacancyStatus: data.vacancyStatus || null,
-          primaryPrice: data.primaryPrice ? Number(data.primaryPrice) : null,
-          resalePrice: data.resalePrice ? Number(data.resalePrice) : null,
-          premiumAndLoss: data.premiumAndLoss
-            ? Number(data.premiumAndLoss)
-            : null,
-          Rent: data.Rent ? Number(data.Rent) : null,
-          noOfCheques: data.noOfCheques ? Number(data.noOfCheques) : null,
+          UnitPurpose: data.UnitPurpose,
+          listingDate: data.listingDate,
+          chequeFrequency: data.chequeFrequency,
+          rentalPrice: data.rentalPrice,
+          salePrice: data.salePrice,
+          rentedAt: data.rentedAt,
+          rentedTill: data.rentedTill,
+          vacantOn: data.vacantOn,
+          originalPrice: data.originalPrice,
+          paidTODevelopers: data.paidTODevelopers,
+          payableTODevelopers: data.payableTODevelopers,
+          premiumAndLoss: data.premiumAndLoss,
         });
       }
-      return insertion
 
-      console.log(`Records to insert after filtering: ${insertion.length}`);
+      const projectsListDocument: any[] = await this.projectModel
+        .find({
+          projectName: { $in: projectNamelist },
+        })
+        .select('_id, projectName');
 
-      const BATCH_SIZE = 10000;
+      const updatedDocumentList = [];
+      for (let i = 0; i < projectsListDocument.length; i++) {
+        for (let j = 0; j < insertion.length; j++) {
+          console.log(insertion[j].projectName);
+          if (
+            insertion[j].projectName === projectsListDocument[i].projectName
+          ) {
+            const { projectName, ...obj } = insertion[j];
+            const data = {
+              ...obj,
+              project: projectsListDocument[i]._id,
+            };
+            updatedDocumentList.push(data);
+          }
+        }
+      }
+
+      // return updatedDocumentList;
+      console.log(
+        `Records to insert after filtering: ${updatedDocumentList.length}`,
+      );
+
+      const BATCH_SIZE = 5000;
       let batchCount = 0;
 
-      for (let i = 0; i < insertion.length; i += BATCH_SIZE) {
-        const batch = insertion.slice(i, i + BATCH_SIZE);
+      for (let i = 0; i < updatedDocumentList.length; i += BATCH_SIZE) {
+        const batch = updatedDocumentList.slice(i, i + BATCH_SIZE);
         await this.inventoryModel.insertMany(batch);
         batchCount++;
         console.log(`Inserted batch ${batchCount}, Records: ${batch.length}`);
@@ -609,7 +655,6 @@ export class InventoryService {
 
       return {
         success: true,
-        statusCode: 201,
         message: 'All records inserted successfully',
       };
     } catch (e) {
