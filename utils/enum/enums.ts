@@ -14,6 +14,7 @@ export enum SalesStatus {
   PRIMARY = 'Primary',
   OFF_PLANN_RESALE = 'Off Plan Resale',
   RESALE = 'Resale',
+  PRIMARYPLUSOFFPLANRESALE = 'Primary + Off Plan Resale',
 }
 
 export enum FacilitiesCategory {

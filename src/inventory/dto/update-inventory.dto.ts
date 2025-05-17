@@ -5,7 +5,7 @@ import {
   IsEnum,
   IsOptional,
 } from 'class-validator';
-import { UnitPurpose, unitType } from 'utils/enum/enums';
+import { UnitPurpose } from 'utils/enum/enums';
 
 export class UpdateInventoryDto {
   @IsString()
@@ -16,7 +16,7 @@ export class UpdateInventoryDto {
 
   @IsOptional()
   @IsNumber()
-  unitHeight?: number;
+  unitHeight?: string;
 
   @IsOptional()
   @IsString()
@@ -34,8 +34,8 @@ export class UpdateInventoryDto {
   @IsNumber()
   BuaSqFt?: number;
 
-  @IsEnum(unitType)
-  unitType: string;
+  @IsNumber()
+  noOfBedRooms: number;
 
   @IsArray()
   @IsString({ each: true })

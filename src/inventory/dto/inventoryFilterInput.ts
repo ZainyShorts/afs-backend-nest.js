@@ -3,12 +3,12 @@ export class InventoryFilterInput {
   subDevelopment?: string;
   project?: string;
   unitNumber?: string;
-  unitHeight?: number;
+  unitHeight?: string;
   unitInternalDesign?: string;
   unitExternalDesign?: string;
   plotSizeSqFt?: number;
   buaSqFt?: number;
-  unitType?: string;
+  noOfBedRooms?: string;
   unitView?: string[];
   pictures?: string[];
   unitPurpose?: string;

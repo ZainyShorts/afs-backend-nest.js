@@ -1,7 +1,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
 import { Project } from 'src/project/schema/project.schema';
-import { UnitPurpose, unitType } from 'utils/enum/enums';
+import { UnitPurpose } from 'utils/enum/enums';
 
 @Schema({
   timestamps: true,
@@ -13,8 +13,8 @@ export class Inventory extends Document {
   @Prop({ type: String, required: true })
   unitNumber: string;
 
-  @Prop({ type: Number })
-  unitHeight: number;
+  @Prop({ type: String })
+  unitHeight: string;
 
   @Prop({ type: String })
   unitInternalDesign: string;
@@ -28,8 +28,8 @@ export class Inventory extends Document {
   @Prop({ type: Number })
   BuaSqFt: number;
 
-  @Prop({ type: String, enum: unitType })
-  unitType: string;
+  @Prop({ type: Number })
+  noOfBedRooms: number;
 
   @Prop({ type: [String] })
   unitView: string[];
@@ -46,10 +46,10 @@ export class Inventory extends Document {
   @Prop({ type: String })
   chequeFrequency: string;
 
-  @Prop({ type: Number, default: null })
+  @Prop({ type: Number })
   rentalPrice: number;
 
-  @Prop({ type: Number, default: null })
+  @Prop({ type: Number })
   salePrice: number;
 
   // unit Tenancy Detail

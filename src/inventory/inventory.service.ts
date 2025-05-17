@@ -8,7 +8,6 @@ import {
 import { HttpStatusCode } from 'axios';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { userID } from 'utils/mongoId/deScopeIdForrmater';
 import * as xlsx from 'xlsx';
 import * as fs from 'fs';
 import { Inventory } from './schema/inventory.schema';
@@ -92,8 +91,8 @@ export class InventoryService {
           query.unitNumber = filter.unitNumber;
         }
 
-        if (filter.unitType) {
-          query.unitType = filter.unitType;
+        if (filter.noOfBedRooms) {
+          query.noOfBedRooms = filter.noOfBedRooms;
         }
 
         if (filter.unitInternalDesign) {
@@ -266,24 +265,32 @@ export class InventoryService {
     }
   }
 
-  async findOne(id: string, populateFields?: string[]): Promise<Inventory> {
+  async findOne(id: string): Promise<Inventory> {
     try {
-      let query = this.inventoryModel.findById(id);
+      const inventory = await this.inventoryModel
+        .findById(id)
+        .populate({
+          path: 'project',
+          populate: [
+            {
+              path: 'masterDevelopment',
+              model: 'MasterDevelopment',
+              select: 'developmentName roadLocation',
+            },
+            {
+              path: 'subDevelopment',
+              model: 'SubDevelopment',
+              select: 'subDevelopment',
+            },
+          ],
+        })
+        .exec();
 
-      // Dynamically populate if fields are provided
-      if (populateFields && populateFields.length > 0) {
-        populateFields.forEach((field) => {
-          query = query.populate(field);
-        });
-      }
-
-      const project = await query.exec();
-
-      if (!project) {
+      if (!inventory) {
         throw new NotFoundException(`Unit with ID ${id} not found`);
       }
 
-      return project;
+      return inventory;
     } catch (error) {
       throw new InternalServerErrorException(
         error.message || 'Failed to find Unit',
@@ -330,7 +337,104 @@ export class InventoryService {
     }
   }
 
-  async readXlsxAndInsert(filePath: string, clerkId: string): Promise<any> {
+  // async readXlsxAndInsert(filePath: string, clerkId: string): Promise<any> {
+  //   try {
+  //     const fileBuffer = fs.readFileSync(filePath);
+  //     const workbook = xlsx.read(fileBuffer, { type: 'buffer' });
+
+  //     const sheetName = workbook.SheetNames[0];
+  //     const sheetData = xlsx.utils.sheet_to_json(workbook.Sheets[sheetName]);
+
+  //     // Function to convert keys to camelCase
+  //     const toCamelCase = (str: string) =>
+  //       str
+  //         .replace(/\s(.)/g, (match) => match.toUpperCase())
+  //         .replace(/\s/g, '')
+  //         .replace(/^(.)/, (match) => match.toLowerCase());
+
+  //     // Normalize data keys for each row
+  //     const formattedSheetData = sheetData.map((row: any) => {
+  //       const newRow: any = {};
+  //       Object.keys(row).forEach((key) => {
+  //         newRow[toCamelCase(key)] = row[key];
+  //       });
+  //       return newRow;
+  //     });
+
+  //     console.log(`Rows extracted from Excel: ${formattedSheetData.length}`);
+
+  //     // Convert data into MongoDB insert format
+  //     const insertion = formattedSheetData.map((data: any) => ({
+  //       userId: userID(clerkId),
+  //       clerkId: clerkId,
+  //       roadLocation: data.roadLocation || null,
+  //       developmentName: data.developmentName || null,
+  //       subDevelopmentName: data.subDevelopmentName || null,
+  //       projectName: data.projectName || null,
+  //       propertyType: data.propertyType || null,
+  //       propertyHeight: data.propertyHeight || null,
+  //       projectLocation: data.projectLocation || null,
+  //       unitNumber: data.unitNumber || null,
+  //       bedrooms: data.bedrooms ? Number(data.bedrooms) : null,
+  //       unitLandSize: data.unitLandSize || null,
+  //       unitBua: data.unitBua ? Number(data.unitBua) : null,
+  //       unitLocation: data.unitLocation || null,
+  //       unitView: data.unitView
+  //         ? Array.isArray(data.unitView)
+  //           ? data.unitView
+  //           : [data.unitView]
+  //         : [],
+  //       propertyImages: data.propertyImages
+  //         ? Array.isArray(data.propertyImages)
+  //           ? data.propertyImages
+  //           : [data.propertyImages]
+  //         : [],
+  //       Purpose: data.Purpose || null,
+  //       vacancyStatus: data.vacancyStatus || null,
+  //       primaryPrice: data.primaryPrice ? Number(data.primaryPrice) : null,
+  //       resalePrice: data.resalePrice ? Number(data.resalePrice) : null,
+  //       premiumAndLoss: data.premiumAndLoss
+  //         ? Number(data.premiumAndLoss)
+  //         : null,
+  //       Rent: data.Rent ? Number(data.Rent) : null,
+  //       noOfCheques: data.noOfCheques ? Number(data.noOfCheques) : null,
+  //     }));
+
+  //     console.log(`Records to insert: ${insertion.length}`);
+
+  //     // Batch Insert
+  //     const BATCH_SIZE = 10000;
+  //     let batchCount = 0;
+
+  //     for (let i = 0; i < insertion.length; i += BATCH_SIZE) {
+  //       const batch = insertion.slice(i, i + BATCH_SIZE);
+  //       await this.inventoryModel.insertMany(batch);
+  //       batchCount++;
+  //       console.log(`Inserted batch ${batchCount}, Records: ${batch.length}`);
+  //     }
+
+  //     console.log('All records inserted successfully!');
+
+  //     return {
+  //       success: true,
+  //       statusCode: 201,
+  //       message: 'All records inserted successfully',
+  //     };
+  //   } catch (e) {
+  //     console.error(e);
+  //     throw new HttpException(
+  //       'Internal Server Error',
+  //       HttpStatus.INTERNAL_SERVER_ERROR,
+  //     );
+  //   } finally {
+  //     if (filePath) {
+  //       fs.unlink(filePath, (err) => {
+  //         if (err) console.error('Error deleting file:', err);
+  //       });
+  //     }
+  //   }
+  // }
+  async import(filePath: string): Promise<any> {
     try {
       const fileBuffer = fs.readFileSync(filePath);
       const workbook = xlsx.read(fileBuffer, { type: 'buffer' });
@@ -338,64 +442,159 @@ export class InventoryService {
       const sheetName = workbook.SheetNames[0];
       const sheetData = xlsx.utils.sheet_to_json(workbook.Sheets[sheetName]);
 
-      // Function to convert keys to camelCase
       const toCamelCase = (str: string) =>
         str
           .replace(/\s(.)/g, (match) => match.toUpperCase())
           .replace(/\s/g, '')
           .replace(/^(.)/, (match) => match.toLowerCase());
 
-      // Normalize data keys for each row
       const formattedSheetData = sheetData.map((row: any) => {
         const newRow: any = {};
         Object.keys(row).forEach((key) => {
-          newRow[toCamelCase(key)] = row[key];
+          let camelKey = toCamelCase(key);
+
+          // Special case for 'plotSizeSq.Ft.'
+          if (camelKey === 'plotSizeSq.Ft.') {
+            camelKey = 'plotSizeSqFt';
+            newRow[camelKey] = row[key];
+            return;
+          }
+
+          if (camelKey === 'bUASq.Ft.') {
+            camelKey = 'bUASqFt';
+            newRow[camelKey] = row[key];
+            return;
+          }
+
+          if (camelKey === 'no.OfBedRooms') {
+            camelKey = 'noOfBedRooms';
+            newRow[camelKey] = row[key];
+            return;
+          }
+
+          if (camelKey === 'unitView') {
+            const unitViewList = row[key];
+            if (unitViewList.includes(',')) {
+              const list = unitViewList.split(',');
+              newRow[camelKey] = list;
+              return;
+            } else {
+              newRow[camelKey] = [row[key]];
+              return;
+            }
+          }
+
+          newRow[camelKey] = row[key];
         });
         return newRow;
       });
 
+      // return formattedSheetData;
       console.log(`Rows extracted from Excel: ${formattedSheetData.length}`);
 
-      // Convert data into MongoDB insert format
-      const insertion = formattedSheetData.map((data: any) => ({
-        userId: userID(clerkId),
-        clerkId: clerkId,
-        roadLocation: data.roadLocation || null,
-        developmentName: data.developmentName || null,
-        subDevelopmentName: data.subDevelopmentName || null,
-        projectName: data.projectName || null,
-        propertyType: data.propertyType || null,
-        propertyHeight: data.propertyHeight || null,
-        projectLocation: data.projectLocation || null,
-        unitNumber: data.unitNumber || null,
-        bedrooms: data.bedrooms ? Number(data.bedrooms) : null,
-        unitLandSize: data.unitLandSize || null,
-        unitBua: data.unitBua ? Number(data.unitBua) : null,
-        unitLocation: data.unitLocation || null,
-        unitView: data.unitView
-          ? Array.isArray(data.unitView)
-            ? data.unitView
-            : [data.unitView]
-          : [],
-        propertyImages: data.propertyImages
-          ? Array.isArray(data.propertyImages)
-            ? data.propertyImages
-            : [data.propertyImages]
-          : [],
-        Purpose: data.Purpose || null,
-        vacancyStatus: data.vacancyStatus || null,
-        primaryPrice: data.primaryPrice ? Number(data.primaryPrice) : null,
-        resalePrice: data.resalePrice ? Number(data.resalePrice) : null,
-        premiumAndLoss: data.premiumAndLoss
-          ? Number(data.premiumAndLoss)
-          : null,
-        Rent: data.Rent ? Number(data.Rent) : null,
-        noOfCheques: data.noOfCheques ? Number(data.noOfCheques) : null,
-      }));
+      const insertion = [];
 
-      console.log(`Records to insert: ${insertion.length}`);
+      for (const [index, data] of formattedSheetData.entries()) {
+        // Validate required fields
+        if (data.plotSizeSqFt && typeof data.plotSizeSqFt == 'string') {
+          return {
+            success: false,
+            msg: `Invalid type of plotSizeSqFt row: ${index}`,
+          };
+        }
 
-      // Batch Insert
+        if (data.BuaSqFt && typeof data.BuaSqFt == 'string') {
+          return {
+            success: false,
+            msg: `Invalid type of BuaSqFt row: ${index}`,
+          };
+        }
+
+        if (data.noOfBedRooms && typeof data.noOfBedRooms == 'string') {
+          return {
+            success: false,
+            msg: `Invalid type of noOfBedRooms row: ${index}`,
+          };
+        }
+
+        if (data.rentalPrice && typeof data.rentalPrice == 'string') {
+          return {
+            success: false,
+            msg: `Invalid type of rentalPrice row: ${index}`,
+          };
+        }
+
+        if (data.salePrice && typeof data.salePrice == 'string') {
+          return {
+            success: false,
+            msg: `Invalid type of salePrice row: ${index}`,
+          };
+        }
+
+        if (data.originalPrice && typeof data.originalPrice == 'string') {
+          return {
+            success: false,
+            msg: `Invalid type of originalPrice row: ${index}`,
+          };
+        }
+
+        if (data.premiumAndLoss && typeof data.premiumAndLoss == 'string') {
+          return {
+            success: false,
+            msg: `Invalid type of premiumAndLoss row: ${index}`,
+          };
+        }
+
+        // Parse unitView string to array, splitting by comma if needed
+        let unitViewArray: string[] = [];
+        if (data.unitView) {
+          if (typeof data.unitView === 'string') {
+            unitViewArray = data.unitView
+              .split(',')
+              .map((v) => v.trim())
+              .filter(Boolean);
+          } else if (Array.isArray(data.unitView)) {
+            unitViewArray = data.unitView;
+          }
+        }
+
+        // Find project by projectName
+        let project = null;
+        if (data.projectName) {
+          project = await this.projectModel
+            .findOne({ name: data.projectName })
+            .exec();
+        }
+
+        insertion.push({
+          projectName: data.projectName,
+          unitNumber: data.unitNumber,
+          unitHeight: data.unitHeight,
+          unitPurpose: data.unitPurpose,
+          noOfBedRooms: data.noOfBedRooms,
+          plotSizeSqFt: data.plotSizeSqFt,
+          BuaSqFt: data.BuaSqFt,
+          unitLocation: data.unitLocation || null,
+          unitView: unitViewArray,
+          propertyImages: data.propertyImages
+            ? Array.isArray(data.propertyImages)
+              ? data.propertyImages
+              : [data.propertyImages]
+            : [],
+          vacancyStatus: data.vacancyStatus || null,
+          primaryPrice: data.primaryPrice ? Number(data.primaryPrice) : null,
+          resalePrice: data.resalePrice ? Number(data.resalePrice) : null,
+          premiumAndLoss: data.premiumAndLoss
+            ? Number(data.premiumAndLoss)
+            : null,
+          Rent: data.Rent ? Number(data.Rent) : null,
+          noOfCheques: data.noOfCheques ? Number(data.noOfCheques) : null,
+        });
+      }
+      return insertion
+
+      console.log(`Records to insert after filtering: ${insertion.length}`);
+
       const BATCH_SIZE = 10000;
       let batchCount = 0;
 

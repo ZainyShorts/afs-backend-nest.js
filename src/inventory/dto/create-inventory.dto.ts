@@ -20,7 +20,7 @@ export class CreateInventorytDto {
 
   @Field(() => String)
   @IsString()
-  propertyHeight: string;
+  unitHeight: string;
 
   @Field(() => String)
   @IsString()
@@ -32,7 +32,7 @@ export class CreateInventorytDto {
 
   @Field(() => Number)
   @IsNumber()
-  bedrooms: number;
+  noOfBedRooms: number;
 
   @Field(() => Number)
   @IsNumber()

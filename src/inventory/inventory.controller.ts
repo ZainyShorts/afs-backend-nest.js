@@ -53,12 +53,8 @@ export class InventoryController {
   }
 
   @Get(':id')
-  async findOne(
-    @Param('id') id: string,
-    @Query('populate') populate?: string,
-  ): Promise<Inventory> {
-    const populateFields = populate ? populate.split(',') : [];
-    return await this.inventoryService.findOne(id, populateFields);
+  async findOne(@Param('id') id: string): Promise<Inventory> {
+    return await this.inventoryService.findOne(id);
   }
 
   @Delete(':id')
@@ -74,12 +70,11 @@ export class InventoryController {
     return this.inventoryService.updateProperty(id, updatePropertyDto);
   }
 
-  @Post('updateBulkRecord')
+  @Post('import')
   @UseInterceptors(FileInterceptor('file', multerOptionsForXlxs))
   async uploadFile(
     @UploadedFile() file: UploadedFileType,
-    @Body() data: any,
   ): Promise<ResponseDto> {
-    return this.inventoryService.readXlsxAndInsert(file.path, data.clerkId);
+    return this.inventoryService.import(file.path);
   }
 }
