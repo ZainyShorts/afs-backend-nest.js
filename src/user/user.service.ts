@@ -1,16 +1,11 @@
 // user.service.ts
-import {
-  Injectable,
-  InternalServerErrorException,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { LoginDto } from './dto/login-user.dto';
 import * as bcrypt from 'bcrypt';
 import { CreateUserDto } from './dto/create-user.dto';
 import { User } from './schema/user.schema';
-
+import { Types } from 'mongoose';
 @Injectable()
 export class UserService {
   constructor(@InjectModel('User') private readonly userModel: Model<User>) {}
@@ -28,38 +23,6 @@ export class UserService {
     } catch (error) {
       console.error('Error creating user:', error);
       throw error;
-    }
-  }
-
-  // Login user
-  async login(loginDto: LoginDto): Promise<User> {
-    try {
-      const user = await this.userModel.findOne({ email: loginDto.email });
-
-      if (!user) {
-        throw new UnauthorizedException('Invalid email or password');
-      }
-
-      const isPasswordValid = await bcrypt.compare(
-        loginDto.password,
-        user.password,
-      );
-      if (!isPasswordValid) {
-        throw new UnauthorizedException('Invalid email or password');
-      }
-
-      user.lastLogin = new Date();
-      await user.save();
-      return user;
-    } catch (error) {
-      if (error instanceof UnauthorizedException) {
-        throw error;
-      }
-
-      console.error('Unexpected error during login:', error);
-      throw new InternalServerErrorException(
-        'Failed to login. Please try again later.',
-      );
     }
   }
 
@@ -112,5 +75,18 @@ export class UserService {
       console.error('Error updating user:', error);
       throw error;
     }
+  }
+
+  async findByEmail(email: string) {
+    return this.userModel.findOne({ email });
+  }
+
+  async comparePasswords(plainText: string, hashed: string): Promise<boolean> {
+    return bcrypt.compare(plainText, hashed);
+  }
+
+  // user.service.ts
+  async updateLastLogin(userId: Types.ObjectId, date: Date): Promise<void> {
+    await this.userModel.findByIdAndUpdate(userId, { lastLogin: date });
   }
 }

@@ -14,6 +14,7 @@ import { DocumentModule } from './document/document.module';
 import { SubDevelopmentModule } from './subdevelopment/subdevelopment.module';
 import { ProjectModule } from './project/project.module';
 import { UserModule } from './user/user.module';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { UserModule } from './user/user.module';
     DocumentModule,
     SubDevelopmentModule,
     ProjectModule,
+    AuthModule,
   ],
   controllers: [AppController, EventsController],
   providers: [AppService, AppResolver, EventsGateway],

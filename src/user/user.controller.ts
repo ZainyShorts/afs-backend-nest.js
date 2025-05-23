@@ -9,7 +9,6 @@ import {
   Patch,
 } from '@nestjs/common';
 import { UserService } from './user.service';
-import { LoginDto } from './dto/login-user.dto';
 import { CreateUserDto } from './dto/create-user.dto';
 
 @Controller('user')
@@ -20,12 +19,6 @@ export class UserController {
   @Post()
   async create(@Body() createUserDto: CreateUserDto) {
     return this.userService.create(createUserDto);
-  }
-
-  // Login user
-  @Post('login')
-  async login(@Body() loginDto: LoginDto) {
-    return this.userService.login(loginDto);
   }
 
   // Get all users
