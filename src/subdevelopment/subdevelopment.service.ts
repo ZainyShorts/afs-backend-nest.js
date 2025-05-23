@@ -68,12 +68,13 @@ export class SubDevelopmentService {
   }
 
   async findAll(
-    filter?: SubDevelopmentFilterInput,
     page = 1,
     limit = 10,
     sortBy = 'createdAt',
     sortOrder = 'desc',
+    filter?: SubDevelopmentFilterInput,
     populate?: string,
+    fields?: string,
   ): Promise<any> {
     try {
       const query: any = {};
@@ -136,8 +137,10 @@ export class SubDevelopmentService {
           ? await this.subDevelopmentModel.countDocuments(query)
           : await this.subDevelopmentModel.estimatedDocumentCount();
 
+      const projection = fields ? fields.split(',').join(' ') : '';
       const data = await this.subDevelopmentModel
         .find(query)
+        .select(projection)
         .populate(populate) // If you want to populate
         .sort({ [sortBy]: sortDirection })
         .skip((page - 1) * limit)
@@ -257,130 +260,151 @@ export class SubDevelopmentService {
     }
   }
 
-  async importExcelFile(filePath: string): Promise<any> {
-    try {
-      const fileBuffer = fs.readFileSync(filePath);
-      const workbook = XLSX.read(fileBuffer, { type: 'buffer' });
-      const sheetName = workbook.SheetNames[0];
-      const sheet = workbook.Sheets[sheetName];
-      const jsonData = XLSX.utils.sheet_to_json(sheet);
+  async import(filePath: string): Promise<any> {
+    // try {
+    //   const fileBuffer = fs.readFileSync(filePath);
+    //   const workbook = XLSX.read(fileBuffer, { type: 'buffer' });
+    //   const sheetName = workbook.SheetNames[0];
+    //   const sheet = workbook.Sheets[sheetName];
+    //   const jsonData = XLSX.utils.sheet_to_json(sheet);
 
-      const formattedData = jsonData.map((row: any) => {
-        const formattedRow: any = {};
-        for (const key in row) {
-          const cleanedKey = key.replace(/\n/g, '').trim();
-          const mappedKey = SubDevelopmentheaderMapping[cleanedKey];
-          if (mappedKey) {
-            formattedRow[mappedKey] = row[key];
-          }
-        }
+    //   const formattedData: any = jsonData.map((row: any) => {
+    //     const formattedRow: any = {};
+    //     for (const key in row) {
+    //       const cleanedKey = key.replace(/\n/g, '').trim();
+    //       const mappedKey = SubDevelopmentheaderMapping[cleanedKey];
+    //       if (mappedKey) {
+    //         formattedRow[mappedKey] = row[key];
+    //       }
+    //     }
 
-        formattedRow.totalAreaSqFt =
-          (formattedRow.buaAreaSqFt || 0) +
-          (formattedRow.facilitiesAreaSqFt || 0) +
-          (formattedRow.amentiesAreaSqFt || 0);
+    //     formattedRow['totalAreaSqFt'] =
+    //       (formattedRow.buaAreaSqFt || 0) +
+    //       (formattedRow.facilitiesAreaSqFt || 0) +
+    //       (formattedRow.amentiesAreaSqFt || 0);
 
-        const plotPermissionList = [];
+    //     const plotPermissionList: string[] = [];
 
-        if (formattedRow.plotPermission1)
-          return plotPermissionList.push(formattedData.plotPermission1);
+    //     if (formattedRow?.plotPermission1) {
+    //       plotPermissionList.push(formattedRow.plotPermission1);
+    //       delete formattedRow.plotPermission1;
+    //     }
 
-        if (formattedRow.plotPermission2)
-          return plotPermissionList.push(formattedData.plotPermission2);
+    //     if (formattedRow?.plotPermission2) {
+    //       plotPermissionList.push(formattedRow.plotPermission2);
+    //       delete formattedRow.plotPermission2;
+    //     }
 
-        if (formattedRow.plotPermission3)
-          return plotPermissionList.push(formattedData.plotPermission3);
+    //     if (formattedRow?.plotPermission3) {
+    //       plotPermissionList.push(formattedRow.plotPermission3);
+    //       delete formattedRow.plotPermission3;
+    //     }
 
-        if (formattedRow.plotPermission4)
-          return plotPermissionList.push(formattedData.plotPermission4);
+    //     if (formattedRow?.plotPermission4) {
+    //       plotPermissionList.push(formattedRow.plotPermission4);
+    //       delete formattedRow.plotPermission4;
+    //     }
 
-        if (formattedRow.plotPermission5)
-          return plotPermissionList.push(formattedData.plotPermission5);
+    //     if (formattedRow?.plotPermission5) {
+    //       plotPermissionList.push(formattedRow.plotPermission5);
+    //       delete formattedRow.plotPermission5;
+    //     }
 
-        formattedRow.plotPermission = plotPermissionList;
+    //     formattedRow['plotPermission'] = plotPermissionList;
 
-        const requiredFields = [
-          'developmentName',
-          'subDevelopmentName',
-          'plotNumber',
-          'plotHeight',
-          'plotSizeSqFt',
-          'plotBUASqFt',
-          'plotStatus',
-          'plotPermission',
-          'buaAreaSqFt',
-          'facilitiesAreaSqFt',
-          'amentiesAreaSqFt',
-          'totalAreaSqFt',
-        ];
+    //     return formattedRow;
+    //   });
 
-        for (const field of requiredFields) {
-          if (!formattedRow[field] || formattedRow[field] === 0) {
-            console.log(`Missing or empty field: ${field}`);
-            throw new BadRequestException(
-              'File format is not correct. Missing or empty fields.',
-            );
-          }
-        }
+    //   const requiredFields = [
+    //     'developmentName',
+    //     'subDevelopment',
+    //     'plotNumber',
+    //     'plotHeight',
+    //     'plotSizeSqFt',
+    //     'plotBUASqFt',
+    //     'plotStatus',
+    //     'plotPermission',
+    //     'buaAreaSqFt',
+    //     'facilitiesAreaSqFt',
+    //     'amentiesAreaSqFt',
+    //     'totalAreaSqFt',
+    //   ];
 
-        return formattedRow;
-      });
+    //   for(let i=0; i<formattedData.length;i++){
+    //       if (!formattedData[i][field]) {
+    //       return {
+    //         success: false,
+    //         message: `Missing or invalid value of ${field} row: ${index}`,
+    //       };
+    //     }
+    //   }
 
-      const developmentList =
-        await this.masterDevelopmentService.getAllMasterDevelopment([
-          '_id',
-          'developmentName',
-        ]);
+    //   for (const field of requiredFields) {
+    //     if (!formattedData[field]) {
+    //       return {
+    //         success: false,
+    //         message: `Missing or invalid value of ${field} row: ${index}`,
+    //       };
+    //     }
+    //   }
+    //   return formattedData;
 
-      if (formattedData.length === 0) {
-        // No new data to insert
-        fs.unlinkSync(filePath);
-        return {
-          success: true,
-          totalEntries: jsonData.length,
-          insertedEntries: 0,
-          skippedDuplicateEntires: 0,
-        };
-      }
 
-      const chunkSize = 5000;
-      let insertedDataCount = 0;
+    //   const developmentList =
+    //     await this.masterDevelopmentService.getAllMasterDevelopment([
+    //       '_id',
+    //       'developmentName',
+    //     ]);
 
-      for (let i = 0; i < formattedData.length; i += chunkSize) {
-        const chunk = formattedData.slice(i, i + chunkSize);
+    //   if (formattedData.length === 0) {
+    //     // No new data to insert
+    //     fs.unlinkSync(filePath);
+    //     return {
+    //       success: true,
+    //       totalEntries: jsonData.length,
+    //       insertedEntries: 0,
+    //       skippedDuplicateEntires: 0,
+    //     };
+    //   }
 
-        if (chunk.length === 0) continue;
+    //   const chunkSize = 5000;
+    //   let insertedDataCount = 0;
 
-        try {
-          await this.subDevelopmentModel.insertMany(chunk, {
-            ordered: false,
-          });
-          insertedDataCount += chunk.length;
-        } catch (error) {
-          console.error(`Error inserting chunk starting at index ${i}:`, error);
-        }
-      }
+    //   for (let i = 0; i < formattedData.length; i += chunkSize) {
+    //     const chunk = formattedData.slice(i, i + chunkSize);
 
-      fs.unlinkSync(filePath);
+    //     if (chunk.length === 0) continue;
 
-      return {
-        success: true,
-        totalEntries: jsonData.length,
-        insertedEntries: insertedDataCount,
-        skippedDuplicateEntires: 0,
-      };
-    } catch (error) {
-      if (fs.existsSync(filePath)) {
-        fs.unlinkSync(filePath);
-      }
-      if (error.response?.statusCode === 400) {
-        throw new BadRequestException(
-          'File format is not correct. Missing or empty fields.',
-        );
-      }
-      throw new InternalServerErrorException(
-        error?.response?.message || 'Internal server error occurred.',
-      );
-    }
+    //     try {
+    //       await this.subDevelopmentModel.insertMany(chunk, {
+    //         ordered: false,
+    //       });
+    //       insertedDataCount += chunk.length;
+    //     } catch (error) {
+    //       console.error(`Error inserting chunk starting at index ${i}:`, error);
+    //     }
+    //   }
+
+    //   fs.unlinkSync(filePath);
+
+    //   return {
+    //     success: true,
+    //     totalEntries: jsonData.length,
+    //     insertedEntries: insertedDataCount,
+    //     skippedDuplicateEntires: 0,
+    //   };
+    // } catch (error) {
+    //   if (fs.existsSync(filePath)) {
+    //     fs.unlinkSync(filePath);
+    //   }
+    //   if (error.response?.statusCode === 400) {
+    //     throw new BadRequestException(
+    //       'File format is not correct. Missing or empty fields.',
+    //     );
+    //   }
+    //   throw new InternalServerErrorException(
+    //     error?.response?.message || 'Internal server error occurred.',
+    //   );
+    // }
   }
 }

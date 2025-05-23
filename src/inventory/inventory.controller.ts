@@ -35,19 +35,19 @@ export class InventoryController {
 
   @Get()
   async findAll(
-    @Query() filter?: InventoryFilterInput,
     @Query('page', new DefaultValuePipe(1), ParseIntPipe) page = 1,
     @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit = 10,
     @Query('sortBy') sortBy = 'createdAt',
     @Query('sortOrder') sortOrder = 'desc',
+    @Query() filter?: InventoryFilterInput,
     @Query('populate') populate?: string,
   ) {
     return this.inventoryService.findAll(
-      filter,
       page,
       limit,
       sortBy,
       sortOrder,
+      filter,
       populate,
     );
   }
@@ -75,6 +75,7 @@ export class InventoryController {
   async uploadFile(
     @UploadedFile() file: UploadedFileType,
   ): Promise<ResponseDto> {
+    console.log('import')
     return this.inventoryService.import(file.path);
   }
 }

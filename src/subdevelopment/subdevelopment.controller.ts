@@ -31,25 +31,27 @@ export class SubDevelopmentController {
   @Post('import')
   @UseInterceptors(FileInterceptor('file', multerOptionsForXlxs))
   import(@UploadedFile() file: UploadedFileType) {
-    return this.service.importExcelFile(file.path);
+    return this.service.import(file.path);
   }
 
   @Get()
   findAll(
-    @Query() filter: SubDevelopmentFilterInput,
     @Query('page') page = 1,
     @Query('limit') limit = 10,
     @Query('sortBy') sortBy = 'createdAt',
     @Query('sortOrder') sortOrder = 'desc',
+    @Query() filter: SubDevelopmentFilterInput,
     @Query('populate') populate?: string,
+    @Query('fields') fields?: string,
   ) {
     return this.service.findAll(
-      filter,
       +page,
       +limit,
       sortBy,
       sortOrder,
+      filter,
       populate,
+      fields,
     );
   }
 

@@ -42,12 +42,13 @@ export class ProjectService {
   }
 
   async findAll(
-    filter?: ProjectFilterInput,
     page = 1,
     limit = 10,
     sortBy = 'createdAt',
     sortOrder = 'desc',
+    filter?: ProjectFilterInput,
     populate?: string,
+    fields?: string,
   ): Promise<any> {
     try {
       const query: any = {};
@@ -141,9 +142,10 @@ export class ProjectService {
       if (populate) {
         populateFields = populate.split(',').map((field) => field.trim());
       }
-
+      const projection = fields ? fields.split(',').join(' ') : '';
       let data = await this.projectModel
         .find(query)
+        .select(projection)
         .populate(populateFields)
         .sort({ [sortBy]: sortDirection })
         .skip((page - 1) * limit)

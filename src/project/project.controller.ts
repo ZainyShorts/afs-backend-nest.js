@@ -28,20 +28,22 @@ export class ProjectController {
 
   @Get()
   findAll(
-    @Query() filter: ProjectFilterInput,
     @Query('page') page = 1,
     @Query('limit') limit = 10,
     @Query('sortBy') sortBy = 'createdAt',
     @Query('sortOrder') sortOrder = 'desc',
+    @Query() filter: ProjectFilterInput,
     @Query('populate') populate?: string,
+    @Query('fields') fields?: string,
   ) {
     return this.projectService.findAll(
-      filter,
       +page,
       +limit,
       sortBy,
       sortOrder,
+      filter,
       populate,
+      fields,
     );
   }
 

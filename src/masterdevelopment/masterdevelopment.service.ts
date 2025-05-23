@@ -89,11 +89,12 @@ export class MasterDevelopmentService {
   }
 
   async findAll(
-    filter?: MasterDevelopmentFilterInput,
     page = 1,
     limit = 10,
     sortBy = 'createdAt',
     sortOrder = 'desc',
+    filter?: MasterDevelopmentFilterInput,
+    fields?: string,
   ) {
     try {
       const query: any = {};
@@ -151,7 +152,109 @@ export class MasterDevelopmentService {
           ? await this.MasterDevelopmentModel.countDocuments(query)
           : await this.MasterDevelopmentModel.estimatedDocumentCount();
 
+      const projection = fields ? fields.split(',').join(' ') : '';
       const data = await this.MasterDevelopmentModel.find(query)
+        .select(projection)
+        .sort({ [sortBy]: sortDirection })
+        .skip((page - 1) * limit)
+        .limit(limit)
+        .exec();
+
+      // const queryBuilder = this.MasterDevelopmentModel.find(query)
+      //   .sort({ [sortBy]: sortDirection })
+      //   .skip((page - 1) * limit)
+      //   .limit(limit);
+
+      // // Only apply `.select()` if fields are provided
+      // if (fields) {
+      //   const projection = fields.split(',').join(' ');
+      //   queryBuilder.select(projection);
+      // }
+
+      // console.log(queryBuilder);
+
+      // const data = await queryBuilder.exec();
+
+      return {
+        data,
+        totalCount,
+        totalPages: Math.ceil(totalCount / limit),
+        pageNumber: page,
+      };
+    } catch (error) {
+      console.error('Error fetching MasterDevelopments:', error);
+      throw new Error('Failed to fetch MasterDevelopments.');
+    }
+  }
+
+  async selectiveFindAll(
+    filter?: MasterDevelopmentFilterInput,
+    page = 1,
+    limit = 10,
+    sortBy = 'createdAt',
+    sortOrder = 'desc',
+    fields?: string,
+  ) {
+    try {
+      const query: any = {};
+
+      if (filter) {
+        if (filter.developmentName) {
+          query.developmentName = {
+            $regex: new RegExp(filter.developmentName, 'i'),
+          };
+        }
+        if (filter.roadLocation) {
+          query.roadLocation = { $regex: new RegExp(filter.roadLocation, 'i') };
+        }
+        if (filter.country) {
+          query.country = { $regex: new RegExp(filter.country, 'i') };
+        }
+        if (filter.city) {
+          query.city = { $regex: new RegExp(filter.city, 'i') };
+        }
+        if (filter.locationQuality) {
+          query.locationQuality = filter.locationQuality;
+        }
+        if (filter.buaAreaSqFtRange) {
+          query.buaAreaSqFt = {};
+          if (filter.buaAreaSqFtRange.min !== undefined)
+            query.buaAreaSqFt.$gte = filter.buaAreaSqFtRange.min;
+          if (filter.buaAreaSqFtRange.max !== undefined)
+            query.buaAreaSqFt.$lte = filter.buaAreaSqFtRange.max;
+        }
+        if (filter.totalAreaSqFtRange) {
+          query.totalAreaSqFt = {};
+          if (filter.totalAreaSqFtRange.min !== undefined)
+            query.totalAreaSqFt.$gte = filter.totalAreaSqFtRange.min;
+          if (filter.totalAreaSqFtRange.max !== undefined)
+            query.totalAreaSqFt.$lte = filter.totalAreaSqFtRange.max;
+        }
+        if (filter.facilitiesCategories?.length > 0) {
+          query.facilitiesCategories = { $in: filter.facilitiesCategories };
+        }
+        if (filter.amentiesCategories?.length > 0) {
+          query.amentiesCategories = { $in: filter.amentiesCategories };
+        }
+        if (filter.startDate || filter.endDate) {
+          query.createdAt = {};
+          if (filter.startDate)
+            query.createdAt.$gte = new Date(filter.startDate);
+          if (filter.endDate) query.createdAt.$lte = new Date(filter.endDate);
+        }
+      }
+
+      const sortDirection = sortOrder === 'asc' ? 1 : -1;
+
+      const totalCount =
+        Object.keys(query).length > 0
+          ? await this.MasterDevelopmentModel.countDocuments(query)
+          : await this.MasterDevelopmentModel.estimatedDocumentCount();
+
+      const projection = fields ? fields.split(',').join(' ') : '';
+
+      const data = await this.MasterDevelopmentModel.find(query)
+        .select(projection)
         .sort({ [sortBy]: sortDirection })
         .skip((page - 1) * limit)
         .limit(limit)

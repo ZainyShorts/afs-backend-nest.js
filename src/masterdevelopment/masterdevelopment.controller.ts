@@ -41,8 +41,16 @@ export class MasterDevelopmentController {
     @Query('limit') limit = 10,
     @Query('sortBy') sortBy = 'createdAt',
     @Query('sortOrder') sortOrder = 'desc',
+    @Query('fields') fields?: string,
   ) {
-    return this.service.findAll(filter, +page, +limit, sortBy, sortOrder);
+    return this.service.findAll(
+      +page,
+      +limit,
+      sortBy,
+      sortOrder,
+      filter,
+      fields,
+    );
   }
 
   @Get(':id')

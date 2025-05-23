@@ -1,4 +1,5 @@
 export class InventoryFilterInput {
+  projectID?: string;
   developmentName?: string;
   subDevelopment?: string;
   project?: string;

@@ -63,11 +63,11 @@ export class InventoryService {
   }
 
   async findAll(
-    filter?: InventoryFilterInput,
     page = 1,
     limit = 10,
     sortBy = 'createdAt',
     sortOrder = 'desc',
+    filter?: InventoryFilterInput,
     populate?: string,
   ): Promise<any> {
     try {
@@ -103,8 +103,20 @@ export class InventoryService {
           query.unitExternalDesign = filter.unitExternalDesign;
         }
 
-        if (filter.unitView?.length > 0) {
-          query.unitView = { $in: filter.unitView };
+        if (filter.listingDate) {
+          query.listingDate = filter.listingDate;
+        }
+
+        if (filter.rentedAt) {
+          query.rentedAt = filter.rentedAt;
+        }
+
+        if (filter.projectID) {
+          query.project = filter.projectID;
+        }
+
+        if (filter.rentedAt) {
+          query.rentedAt = filter.rentedAt;
         }
 
         if (filter.rentalPriceRange) {
