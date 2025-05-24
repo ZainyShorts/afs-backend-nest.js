@@ -21,16 +21,19 @@ export class AuthController {
     @Body() loginDto: LoginDto,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const token = await this.authService.login(loginDto);
+    const result = await this.authService.login(loginDto);
+    if (result.success === false) {
+      return result;
+    }
     // Set httpOnly cookie
-    res.cookie('jwt', token, {
+    res.cookie('jwt', result.token, {
       httpOnly: true,
       secure: false, // set to true if using https
       maxAge: 3600000,
       sameSite: 'lax',
     });
 
-    return { message: 'Login successful' };
+    return { message: 'Login successful', success: true };
   }
 
   @UseGuards(JwtAuthGuard)

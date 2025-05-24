@@ -25,6 +25,8 @@ export const UserSchema = new Schema(
     role: { type: String, enum: Role, default: Role.EMPLOYEE },
     access: { type: Boolean, default: true },
     lastLogin: { type: Date, default: null },
+    attempts: { type: Number, default: 3 },
+    ban: { type: Boolean, default: false },
   },
   { timestamps: true },
 );
