@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import {
   HttpException,
   HttpStatus,
@@ -96,11 +97,23 @@ export class InventoryService {
         }
 
         if (filter.unitInternalDesign) {
-          query.unitInternalDesign = filter.unitInternalDesign;
+          query.unitInternalDesign = {
+            $regex: new RegExp(filter.unitInternalDesign, 'i'),
+          };
         }
 
         if (filter.unitExternalDesign) {
-          query.unitExternalDesign = filter.unitExternalDesign;
+          query.unitExternalDesign = {
+            $regex: new RegExp(filter.unitExternalDesign, 'i'),
+          };
+        }
+
+        if (filter.unitHeight) {
+          query.unitHeight = { $regex: new RegExp(filter.unitHeight, 'i') };
+        }
+
+        if (filter.unitPurpose) {
+          query.unitPurpose = filter.unitPurpose;
         }
 
         if (filter.listingDate) {
@@ -117,6 +130,38 @@ export class InventoryService {
 
         if (filter.rentedAt) {
           query.rentedAt = filter.rentedAt;
+        }
+
+        if (filter.noOfBedRooms) {
+          query.noOfBedRooms = {};
+          if (filter.noOfBedRooms.min !== undefined)
+            query.noOfBedRooms.$gte = filter.noOfBedRooms.min;
+          if (filter.noOfBedRooms.max !== undefined)
+            query.noOfBedRooms.$lte = filter.noOfBedRooms.max;
+        }
+
+        if (filter.BuaSqFt) {
+          query.BuaSqFt = {};
+          if (filter.BuaSqFt.min !== undefined)
+            query.BuaSqFt.$gte = filter.BuaSqFt.min;
+          if (filter.BuaSqFt.max !== undefined)
+            query.BuaSqFt.$lte = filter.BuaSqFt.max;
+        }
+
+        if (filter.plotSizeSqFt) {
+          query.plotSizeSqFt = {};
+          if (filter.plotSizeSqFt.min !== undefined)
+            query.plotSizeSqFt.$gte = filter.plotSizeSqFt.min;
+          if (filter.plotSizeSqFt.max !== undefined)
+            query.plotSizeSqFt.$lte = filter.plotSizeSqFt.max;
+        }
+
+        if (filter.rentalPriceRange) {
+          query.rentalPrice = {};
+          if (filter.rentalPriceRange.min !== undefined)
+            query.rentalPrice.$gte = filter.rentalPriceRange.min;
+          if (filter.rentalPriceRange.max !== undefined)
+            query.rentalPrice.$lte = filter.rentalPriceRange.max;
         }
 
         if (filter.rentalPriceRange) {
@@ -164,7 +209,6 @@ export class InventoryService {
 
       const sortDirection = sortOrder === 'asc' ? 1 : -1;
 
-      // Build populate options dynamically
       const populateOptions: any = [];
 
       if (populate) {
@@ -238,7 +282,24 @@ export class InventoryService {
               masterDevelopmentDocument.developmentName,
           );
         } else {
-          // If no such masterDevelopment found, no results should match
+          data = [];
+        }
+      }
+      if (filter.roadLocation) {
+        const masterDevelopmentDocument: MasterDevelopment =
+          await this.masterDevelopmentModel
+            .findOne({
+              roadLocation: filter.roadLocation,
+            })
+            .select('roadLocation');
+        // console.log(masterDevelopmentDocument);
+        if (masterDevelopmentDocument) {
+          data = data.filter(
+            (doc) =>
+              doc.project?.masterDevelopment?.roadLocation ===
+              masterDevelopmentDocument.roadLocation,
+          );
+        } else {
           data = [];
         }
       }
@@ -258,7 +319,6 @@ export class InventoryService {
               subDevelopmentDocument.subDevelopment,
           );
         } else {
-          // If no such masterDevelopment found, no results should match
           data = [];
         }
       }
@@ -349,103 +409,6 @@ export class InventoryService {
     }
   }
 
-  // async readXlsxAndInsert(filePath: string, clerkId: string): Promise<any> {
-  //   try {
-  //     const fileBuffer = fs.readFileSync(filePath);
-  //     const workbook = xlsx.read(fileBuffer, { type: 'buffer' });
-
-  //     const sheetName = workbook.SheetNames[0];
-  //     const sheetData = xlsx.utils.sheet_to_json(workbook.Sheets[sheetName]);
-
-  //     // Function to convert keys to camelCase
-  //     const toCamelCase = (str: string) =>
-  //       str
-  //         .replace(/\s(.)/g, (match) => match.toUpperCase())
-  //         .replace(/\s/g, '')
-  //         .replace(/^(.)/, (match) => match.toLowerCase());
-
-  //     // Normalize data keys for each row
-  //     const formattedSheetData = sheetData.map((row: any) => {
-  //       const newRow: any = {};
-  //       Object.keys(row).forEach((key) => {
-  //         newRow[toCamelCase(key)] = row[key];
-  //       });
-  //       return newRow;
-  //     });
-
-  //     console.log(`Rows extracted from Excel: ${formattedSheetData.length}`);
-
-  //     // Convert data into MongoDB insert format
-  //     const insertion = formattedSheetData.map((data: any) => ({
-  //       userId: userID(clerkId),
-  //       clerkId: clerkId,
-  //       roadLocation: data.roadLocation || null,
-  //       developmentName: data.developmentName || null,
-  //       subDevelopmentName: data.subDevelopmentName || null,
-  //       projectName: data.projectName || null,
-  //       propertyType: data.propertyType || null,
-  //       propertyHeight: data.propertyHeight || null,
-  //       projectLocation: data.projectLocation || null,
-  //       unitNumber: data.unitNumber || null,
-  //       bedrooms: data.bedrooms ? Number(data.bedrooms) : null,
-  //       unitLandSize: data.unitLandSize || null,
-  //       unitBua: data.unitBua ? Number(data.unitBua) : null,
-  //       unitLocation: data.unitLocation || null,
-  //       unitView: data.unitView
-  //         ? Array.isArray(data.unitView)
-  //           ? data.unitView
-  //           : [data.unitView]
-  //         : [],
-  //       propertyImages: data.propertyImages
-  //         ? Array.isArray(data.propertyImages)
-  //           ? data.propertyImages
-  //           : [data.propertyImages]
-  //         : [],
-  //       Purpose: data.Purpose || null,
-  //       vacancyStatus: data.vacancyStatus || null,
-  //       primaryPrice: data.primaryPrice ? Number(data.primaryPrice) : null,
-  //       resalePrice: data.resalePrice ? Number(data.resalePrice) : null,
-  //       premiumAndLoss: data.premiumAndLoss
-  //         ? Number(data.premiumAndLoss)
-  //         : null,
-  //       Rent: data.Rent ? Number(data.Rent) : null,
-  //       noOfCheques: data.noOfCheques ? Number(data.noOfCheques) : null,
-  //     }));
-
-  //     console.log(`Records to insert: ${insertion.length}`);
-
-  //     // Batch Insert
-  //     const BATCH_SIZE = 10000;
-  //     let batchCount = 0;
-
-  //     for (let i = 0; i < insertion.length; i += BATCH_SIZE) {
-  //       const batch = insertion.slice(i, i + BATCH_SIZE);
-  //       await this.inventoryModel.insertMany(batch);
-  //       batchCount++;
-  //       console.log(`Inserted batch ${batchCount}, Records: ${batch.length}`);
-  //     }
-
-  //     console.log('All records inserted successfully!');
-
-  //     return {
-  //       success: true,
-  //       statusCode: 201,
-  //       message: 'All records inserted successfully',
-  //     };
-  //   } catch (e) {
-  //     console.error(e);
-  //     throw new HttpException(
-  //       'Internal Server Error',
-  //       HttpStatus.INTERNAL_SERVER_ERROR,
-  //     );
-  //   } finally {
-  //     if (filePath) {
-  //       fs.unlink(filePath, (err) => {
-  //         if (err) console.error('Error deleting file:', err);
-  //       });
-  //     }
-  //   }
-  // }
   async import(filePath: string): Promise<any> {
     try {
       const fileBuffer = fs.readFileSync(filePath);

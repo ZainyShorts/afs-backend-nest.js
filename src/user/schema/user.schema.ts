@@ -27,6 +27,7 @@ export const UserSchema = new Schema(
     lastLogin: { type: Date, default: null },
     attempts: { type: Number, default: 3 },
     ban: { type: Boolean, default: false },
+    lastOtp: { type: String, maxLength: 6 },
   },
   { timestamps: true },
 );

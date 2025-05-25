@@ -1,12 +1,6 @@
-import {
-  IsString,
-  IsNumber,
-  IsBoolean,
-  IsArray,
-  IsEnum,
-} from 'class-validator';
+import { IsString, IsNumber, IsArray, IsEnum } from 'class-validator';
 import { Field, InputType } from '@nestjs/graphql';
-import { PropertyType } from 'utils/enum/enums';
+import { UnitPurpose } from 'utils/enum/enums';
 
 @InputType()
 export class CreateInventorytDto {
@@ -14,9 +8,13 @@ export class CreateInventorytDto {
   @IsString()
   projectName: string;
 
+  // @Field(() => String)
+  // @IsEnum(PropertyType)
+  // propertyType: string;
+
   @Field(() => String)
-  @IsEnum(PropertyType)
-  propertyType: string;
+  @IsString()
+  unitNumber: string;
 
   @Field(() => String)
   @IsString()
@@ -24,27 +22,23 @@ export class CreateInventorytDto {
 
   @Field(() => String)
   @IsString()
-  projectLocation: string;
+  unitInternalDesign: string;
 
   @Field(() => String)
-  @IsString()
-  unitNumber: string;
+  @IsNumber()
+  unitExternalDesign: string;
 
   @Field(() => Number)
   @IsNumber()
+  plotSizeSqFt: number;
+
+  @Field(() => Number)
+  @IsNumber()
+  BuaSqFt: number;
+
+  @Field(() => Number)
+  @IsString()
   noOfBedRooms: number;
-
-  @Field(() => Number)
-  @IsNumber()
-  unitLandSize: number;
-
-  @Field(() => Number)
-  @IsNumber()
-  unitBua: number;
-
-  @Field(() => String)
-  @IsString()
-  unitLocation: string;
 
   @Field(() => [String])
   @IsArray()
@@ -54,19 +48,23 @@ export class CreateInventorytDto {
   @Field(() => [String])
   @IsArray()
   @IsString({ each: true })
-  propertyImages: string[];
+  pictures: string[];
+
+  @Field(() => String)
+  @IsEnum(UnitPurpose)
+  unitPurpose: string;
+
+  @Field(() => String)
+  @IsEnum(UnitPurpose)
+  unitType: string;
 
   @Field(() => String)
   @IsString()
-  Purpose: string;
+  listingDate: string;
 
   @Field(() => String)
-  @IsString()
-  vacancyStatus: string;
-
-  @Field(() => Number)
   @IsNumber()
-  primaryPrice: number;
+  chequeFrequency: string;
 
   @Field(() => Number)
   @IsNumber()
@@ -74,17 +72,25 @@ export class CreateInventorytDto {
 
   @Field(() => Number)
   @IsNumber()
+  salePrice: number;
+
+  @Field(() => Number)
+  @IsNumber()
+  rentedtAt: number;
+
+  @Field(() => Number)
+  @IsNumber()
+  originalPrice: number;
+
+  @Field(() => Number)
+  @IsNumber()
+  paidTODevelopers: number;
+
+  @Field(() => Number)
+  @IsNumber()
+  payableTODevelopers: number;
+
+  @Field(() => Number)
+  @IsNumber()
   premiumAndLoss: number;
-
-  @Field(() => Number)
-  @IsNumber()
-  Rent: number;
-
-  @Field(() => Number)
-  @IsNumber()
-  noOfCheques: number;
-
-  @Field(() => Boolean)
-  @IsBoolean()
-  listed: boolean;
 }

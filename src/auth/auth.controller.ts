@@ -19,9 +19,21 @@ export class AuthController {
   @Post('login')
   async login(
     @Body() loginDto: LoginDto,
-    @Res({ passthrough: true }) res: Response,
+    // @Res({ passthrough: true }) res: Response,
   ) {
     const result = await this.authService.login(loginDto);
+    if (result.success === false) {
+      return result;
+    }
+    return { success: true };
+  }
+
+  @Post('verify-login')
+  async verifyLogin(
+    @Body() dto: { email: string; otp: string },
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const result = await this.authService.verifyLogin(dto.email, dto.otp);
     if (result.success === false) {
       return result;
     }

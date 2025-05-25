@@ -7,15 +7,25 @@ export class InventoryFilterInput {
   unitHeight?: string;
   unitInternalDesign?: string;
   unitExternalDesign?: string;
-  plotSizeSqFt?: number;
-  buaSqFt?: number;
-  noOfBedRooms?: string;
   unitView?: string[];
   pictures?: string[];
   unitPurpose?: string;
+  unitType?: string;
   listingDate?: string;
   chequeFrequency?: string;
   roadLocation?: string;
+  noOfBedRooms?: {
+    min?: number;
+    max?: number;
+  };
+  plotSizeSqFt?: {
+    min?: number;
+    max?: number;
+  };
+  BuaSqFt?: {
+    min?: number;
+    max?: number;
+  };
   rentalPriceRange?: {
     min?: number;
     max?: number;

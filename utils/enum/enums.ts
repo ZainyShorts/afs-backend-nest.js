@@ -40,7 +40,7 @@ export enum FileType {
   CSV = 'csv',
   IMAGE = 'image',
   PDF = 'pdf',
-  VIDEO = 'video',
+  VIDEO = 'mp4',
 }
 
 export enum PropertyType {
@@ -138,14 +138,9 @@ export enum AmenitiesCategory {
 
 export enum unitType {
   STUDIO = 'Studio',
-  ONE_BEDROOM = '1 BR',
-  TWO_BEDROOM = '2 BR',
-  THREE_BEDROOM = '3 BR',
-  FOUR_BEDROOM = '4 BR',
-  FIVE_BEDROOM = '5 BR',
-  SIX_BEDROOM = '6 BR',
-  SEVEN_BEDROOM = '7 BR',
-  EIGHT_BEDROOM = '8 BR',
+  OFFICE = 'Office',
+  SHOP = 'shop',
+  BEDROOM = 'Bedroom',
 }
 
 export enum UnitPurpose {

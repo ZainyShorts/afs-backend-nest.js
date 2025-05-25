@@ -17,12 +17,21 @@ import {
 import { UpdateMasterDevelopmentDto } from './dto/update-master-development.dto';
 import { MasterDevelopmentFilterInput } from './dto/MasterDevelopmentFilterInput';
 import { MasterDevelopmentheaderMapping } from 'utils/methods/methods';
+import { Project } from 'src/project/schema/project.schema';
+import { Inventory } from 'src/inventory/schema/inventory.schema';
+import { SubDevelopment } from 'src/subdevelopment/schema/subdevelopment.schema';
 
 @Injectable()
 export class MasterDevelopmentService {
   constructor(
     @InjectModel(MasterDevelopment.name)
     private readonly MasterDevelopmentModel: Model<MasterDevelopment>,
+    @InjectModel(SubDevelopment.name)
+    private readonly subDevelopmentModel: Model<SubDevelopment>,
+    @InjectModel(Project.name)
+    private readonly ProjectModel: Model<Project>,
+    @InjectModel(Inventory.name)
+    private readonly InventoryModel: Model<Inventory>,
   ) {}
 
   async create(dto: CreateMasterDevelopmentDto): Promise<MasterDevelopment> {
@@ -558,6 +567,276 @@ export class MasterDevelopmentService {
     } catch (error) {
       console.error('Error finding MasterDevelopment by ID:', error);
       return [];
+    }
+  }
+
+  // async report(id: string): Promise<any> {
+  //   try {
+  //     let noOfPlots = 0;
+  //     let noOfDevelopedPlots = 0;
+  //     let noOfUnderConstructionPlots = 0;
+  //     let noOfVacantPlots = 0;
+  //     const development = await this.MasterDevelopmentModel.findById(id)
+  //       .select(
+  //         'roadLocation developmentName locationQuality facilitiesCategories amentiesCategories',
+  //       )
+  //       .exec();
+
+  //     noOfPlots = await this.subDevelopmentModel
+  //       .find({
+  //         masterDevelopment: { $in: development._id },
+  //       })
+  //       .countDocuments()
+  //       .exec();
+
+  //     noOfPlots += await this.ProjectModel.find({
+  //       masterDevelopment: { $in: development._id },
+  //       plot: { $exists: true, $ne: null },
+  //     }).countDocuments();
+
+  //     noOfDevelopedPlots = await this.subDevelopmentModel
+  //       .find({
+  //         masterDevelopment: { $in: development._id },
+  //         plotStatus: 'Ready',
+  //       })
+  //       .countDocuments()
+  //       .exec();
+
+  //     noOfDevelopedPlots += await this.ProjectModel.find({
+  //       masterDevelopment: { $in: development._id },
+  //       plot: { $exists: true, $ne: null },
+  //       'plot.plotStatus': 'Reay',
+  //     }).countDocuments();
+
+  //     noOfUnderConstructionPlots = await this.subDevelopmentModel
+  //       .find({
+  //         masterDevelopment: { $in: development._id },
+  //         plotStatus: 'Under Construction',
+  //       })
+  //       .countDocuments()
+  //       .exec();
+
+  //     noOfUnderConstructionPlots += await this.ProjectModel.find({
+  //       masterDevelopment: { $in: development._id },
+  //       plot: { $exists: true, $ne: null },
+  //       'plot.plotStatus': 'Under Construction',
+  //     }).countDocuments();
+
+  //     noOfVacantPlots = await this.subDevelopmentModel
+  //       .find({
+  //         masterDevelopment: { $in: development._id },
+  //         plotStatus: 'Vacant',
+  //       })
+  //       .countDocuments()
+  //       .exec();
+
+  //     noOfVacantPlots += await this.ProjectModel.find({
+  //       masterDevelopment: { $in: development._id },
+  //       plot: { $exists: true, $ne: null },
+  //       'plot.plotStatus': 'Vacant',
+  //     }).countDocuments();
+
+  //     return {
+  //       roadLocation: development.roadLocation,
+  //       developmentName: development.developmentName,
+  //       developmentRanking: development.locationQuality,
+  //       noOfFacilities: development.facilitiesCategories.length,
+  //       noOfAmenities: development.amentiesCategories.length,
+  //       noOfPlots,
+  //       noOfDevelopedPlots,
+  //       noOfUnderConstructionPlots,
+  //       noOfVacantPlots,
+  //     };
+  //   } catch (error) {
+  //     console.error('Error finding MasterDevelopment by ID:', error);
+  //     throw new Error('Failed to find MasterDevelopment');
+  //   }
+  // }
+
+  async report(id: string): Promise<any> {
+    try {
+      let noOfPlots = 0;
+      let noOfDevelopedPlots = 0;
+      let noOfUnderConstructionPlots = 0;
+      let noOfVacantPlots = 0;
+
+      const development = await this.MasterDevelopmentModel.findById(id)
+        .select(
+          'roadLocation developmentName locationQuality facilitiesCategories amentiesCategories',
+        )
+        .exec();
+
+      if (!development) {
+        throw new Error('MasterDevelopment not found');
+      }
+
+      noOfPlots = await this.subDevelopmentModel
+        .find({
+          masterDevelopment: id,
+        })
+        .countDocuments()
+        .exec();
+
+      noOfPlots += await this.ProjectModel.find({
+        masterDevelopment: id,
+        plot: { $exists: true, $ne: null },
+      }).countDocuments();
+
+      noOfDevelopedPlots = await this.subDevelopmentModel
+        .find({
+          masterDevelopment: id,
+          plotStatus: 'Ready',
+        })
+        .countDocuments()
+        .exec();
+
+      noOfDevelopedPlots += await this.ProjectModel.find({
+        masterDevelopment: id,
+        plot: { $exists: true, $ne: null },
+        'plot.plotStatus': 'Ready',
+      }).countDocuments();
+
+      noOfUnderConstructionPlots = await this.subDevelopmentModel
+        .find({
+          masterDevelopment: id,
+          plotStatus: 'Under Construction',
+        })
+        .countDocuments()
+        .exec();
+
+      noOfUnderConstructionPlots += await this.ProjectModel.find({
+        masterDevelopment: id,
+        plot: { $exists: true, $ne: null },
+        'plot.plotStatus': 'Under Construction',
+      }).countDocuments();
+
+      noOfVacantPlots = await this.subDevelopmentModel
+        .find({
+          masterDevelopment: id,
+          plotStatus: 'Vacant',
+        })
+        .countDocuments()
+        .exec();
+
+      noOfVacantPlots += await this.ProjectModel.find({
+        masterDevelopment: id,
+        plot: { $exists: true, $ne: null },
+        'plot.plotStatus': 'Vacant',
+      }).countDocuments();
+
+      const projectHeightsSubDev = await this.subDevelopmentModel.aggregate([
+        { $match: { masterDevelopment: id } },
+        {
+          $group: {
+            _id: null,
+            minHeight: { $min: '$plotHeight' },
+            maxHeight: { $max: '$plotHeight' },
+          },
+        },
+      ]);
+
+      const projectHeights = await this.ProjectModel.aggregate([
+        {
+          $match: { masterDevelopment: id, plot: { $exists: true, $ne: null } },
+        },
+        {
+          $group: {
+            _id: null,
+            minHeight: { $min: '$plotHeight' },
+            maxHeight: { $max: '$plotHeight' },
+          },
+        },
+      ]);
+
+      const projectBUASubDev = await this.subDevelopmentModel.aggregate([
+        { $match: { masterDevelopment: id } },
+        {
+          $group: {
+            _id: null,
+            minBUA: { $min: '$plotBUASqFt' },
+            maxBUA: { $max: '$plotBUASqFt' },
+          },
+        },
+      ]);
+
+      const projectBUA = await this.ProjectModel.aggregate([
+        {
+          $match: { masterDevelopment: id, plot: { $exists: true, $ne: null } },
+        },
+        {
+          $group: {
+            _id: null,
+            minBUA: { $min: '$plotBUASqFt' },
+            maxBUA: { $max: '$plotBUASqFt' },
+          },
+        },
+      ]);
+
+      const counts = await this.ProjectModel.aggregate([
+        { $match: { masterDevelopment: id } },
+        {
+          $group: {
+            _id: '$propertyType',
+            count: { $sum: 1 },
+          },
+        },
+      ]);
+
+      const totalCount = counts.reduce((acc, cur) => acc + cur.count, 0);
+
+      // Format counts into an object, e.g. { Apartment: 10, Hotel: 5, Townhouse: 8 }
+      const countsByType = counts.reduce((acc, cur) => {
+        acc[cur._id] = cur.count;
+        return acc;
+      }, {});
+
+      // If you want zero for missing types:
+      const apartmentCount = countsByType['Apartment'] || 0;
+      const hotelCount = countsByType['Hotel'] || 0;
+      const townhouseCount = countsByType['Townhouse'] || 0;
+      const villaCount = countsByType['Villas'] || 0;
+
+      const subDevHeightMin = projectHeightsSubDev[0]?.minHeight ?? Infinity;
+      const subDevHeightMax = projectHeightsSubDev[0]?.maxHeight ?? -Infinity;
+
+      const projMin = projectHeights[0]?.minHeight ?? Infinity;
+      const projMax = projectHeights[0]?.maxHeight ?? -Infinity;
+
+      const subDevBUAMin = projectBUASubDev[0]?.minBUA ?? Infinity;
+      const subDevBUAMax = projectBUASubDev[0]?.maxBUA ?? -Infinity;
+
+      const projMinBUA = projectBUA[0]?.minBUA ?? Infinity;
+      const projMaxBUA = projectBUA[0]?.maxBUA ?? -Infinity;
+
+      return {
+        roadLocation: development.roadLocation,
+        developmentName: development.developmentName,
+        developmentRanking: development.locationQuality,
+        noOfFacilities: (development.facilitiesCategories || []).length,
+        noOfAmenities: (development.amentiesCategories || []).length,
+        noOfPlots,
+        noOfDevelopedPlots,
+        noOfUnderConstructionPlots,
+        noOfVacantPlots,
+        projectHeight: {
+          projectMinHeight: Math.min(subDevHeightMin, projMin),
+          projectMaxHeight: Math.max(subDevHeightMax, projMax),
+        },
+        projectBUA: {
+          projectMinBUA: Math.min(subDevBUAMin, projMinBUA),
+          projectMaxBUA: Math.max(subDevBUAMax, projMaxBUA),
+        },
+        PropertyTypes: {
+          Apartments: apartmentCount,
+          Hoetls: hotelCount,
+          Towhouse: townhouseCount,
+          Villas: villaCount,
+          total: apartmentCount + hotelCount + townhouseCount + villaCount,
+        },
+      };
+    } catch (error) {
+      console.error('Error finding MasterDevelopment by ID:', error);
+      throw new Error('Failed to find MasterDevelopment');
     }
   }
 }

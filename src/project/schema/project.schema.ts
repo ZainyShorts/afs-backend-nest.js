@@ -90,6 +90,9 @@ export class Project {
 
   @Prop([String])
   pictures: string[];
+
+  @Prop([String])
+  vidoes: string[];
 }
 
 export const ProjectSchema = SchemaFactory.createForClass(Project);

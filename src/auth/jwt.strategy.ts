@@ -8,9 +8,18 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     super({
       jwtFromRequest: ExtractJwt.fromExtractors([
         (req) => {
-          const token = req?.cookies?.jwt;
-          console.log('Extracted JWT token:', token);
-          return token;
+          // 1. Try to extract from Authorization header
+          const authHeader = req.headers.authorization;
+          if (authHeader && authHeader.startsWith('Bearer ')) {
+            const token = authHeader.split(' ')[1];
+            console.log('Extracted JWT token from header:', token);
+            return token;
+          }
+
+          // 2. Fallback to cookie
+          const cookieToken = req?.cookies?.jwt;
+          console.log('Extracted JWT token from cookie:', cookieToken);
+          return cookieToken;
         },
       ]),
       secretOrKey: 'WATCHDOGS426890',
@@ -19,6 +28,10 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
   async validate(payload: any) {
     console.log('Decoded JWT payload:', payload);
-    return { userId: payload.userId, useremail: payload.useremail };
+    return {
+      userId: payload.userId,
+      useremail: payload.useremail,
+      role: payload.role,
+    };
   }
 }

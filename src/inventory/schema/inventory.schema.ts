@@ -1,7 +1,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
 import { Project } from 'src/project/schema/project.schema';
-import { UnitPurpose } from 'utils/enum/enums';
+import { UnitPurpose, unitType } from 'utils/enum/enums';
 
 @Schema({
   timestamps: true,
@@ -39,6 +39,9 @@ export class Inventory extends Document {
 
   @Prop({ type: String, enum: UnitPurpose, required: true })
   unitPurpose: string;
+
+  @Prop({ type: String, enum: unitType, required: true })
+  unitType: string;
 
   @Prop({ type: String })
   listingDate: string;

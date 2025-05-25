@@ -1,23 +1,27 @@
-import { chooseContentTypeForSingleResultResponse } from '@apollo/server/dist/esm/ApolloServer';
 import {
   Injectable,
   InternalServerErrorException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { MailService } from 'src/mail/mail.service';
 import { LoginDto } from 'src/user/dto/login-user.dto';
 import { UserService } from 'src/user/user.service';
-// import { UserService } from 'src/user/user.service';
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly jwtService: JwtService,
     private readonly userService: UserService,
+    private readonly mailService: MailService,
   ) {}
 
   async test(data: any) {
     return data;
+  }
+
+  generateOTP(): string {
+    return Math.floor(100000 + Math.random() * 900000).toString();
   }
 
   async validateUser(email: string, pass: string) {
@@ -32,82 +36,6 @@ export class AuthService {
     return null;
   }
 
-  // Login user
-  // async login(loginDto: LoginDto): Promise<any> {
-  //   try {
-  //     const user: any = await this.userService.findByEmail(loginDto.email);
-
-  //     if (!user) {
-  //       return {
-  //         success: false,
-  //         message: `User not found`,
-  //       };
-  //     }
-
-  //     if (user.ban) {
-  //       const ONE_HOUR = 60 * 1000; // 1 hour in ms
-  //       const now = Date.now();
-  //       const updatedTime = new Date(user.updatedAt).getTime();
-  //       const diff = ONE_HOUR - (now - updatedTime);
-  //       if (diff <= 0) {
-  //         // More than 1 hour passed
-  //         user.ban = false;
-  //         user.attempts = 3;
-  //         user.save();
-  //       } else {
-  //         // Calculate minutes and seconds remaining
-  //         const minutes = Math.floor(diff / 60000);
-  //         const seconds = Math.floor((diff % 60000) / 1000);
-
-  //         // Format with leading zeros
-  //         const formatted = `${minutes.toString().padStart(2, '0')}:${seconds
-  //           .toString()
-  //           .padStart(2, '0')}`;
-  //         return {
-  //           success: false,
-  //           message: `Too many failed attempts. Try again in ${formatted}.`,
-  //         };
-  //       }
-  //     }
-
-  //     const isPasswordValid = await this.userService.comparePasswords(
-  //       loginDto.password,
-  //       user.password,
-  //     );
-  //     if (!isPasswordValid) {
-  //       if (user.attempts <= 0) {
-  //         user.ban = true;
-  //       }
-  //       if (user.attempts === 1) {
-  //         user.attempts = user.attempts - 1;
-  //         user.ban = true;
-  //       }
-  //       user.save();
-  //       return {
-  //         success: false,
-  //         message: `Invalid email or password.`,
-  //       };
-  //     }
-
-  //     await this.userService.updateLastLogin(user._id, new Date());
-  //     const payload = { useremail: user.email, userId: user._id };
-  //     user.attempts = 3;
-  //     user.save();
-  //     return {
-  //       success: true,
-  //       token: this.jwtService.sign(payload),
-  //     };
-  //   } catch (error) {
-  //     if (error instanceof UnauthorizedException) {
-  //       throw error;
-  //     }
-
-  //     console.error('Unexpected error during login:', error);
-  //     throw new InternalServerErrorException(
-  //       'Failed to login. Please try again later.',
-  //     );
-  //   }
-  // }
   async login(loginDto: LoginDto): Promise<any> {
     try {
       const user: any = await this.userService.findByEmail(loginDto.email);
@@ -140,7 +68,7 @@ export class AuthService {
 
           return {
             success: false,
-            message: `Too many failed attempts. Try again in ${formatted}.`,
+            message: `Too many failed attempts. Try again in ${formatted}`,
           };
         }
       }
@@ -168,21 +96,22 @@ export class AuthService {
           success: false,
           message: user.ban
             ? 'Too many failed attempts. You are banned for 1 hour.'
-            : `Invalid email or password. Attempts left: ${user.attempts}`,
+            : `Invalid email or password`,
         };
       }
 
       // Successful login - reset attempts and ban
+      const otp = this.generateOTP();
       user.attempts = 3;
       user.ban = false;
+      user.lastOtp = otp;
       await user.save();
 
       await this.userService.updateLastLogin(user._id, new Date());
 
-      const payload = { useremail: user.email, userId: user._id };
+      this.mailService.sendOtpEmail(user.email, otp);
       return {
         success: true,
-        token: this.jwtService.sign(payload),
       };
     } catch (error) {
       if (error instanceof UnauthorizedException) {
@@ -193,6 +122,42 @@ export class AuthService {
       throw new InternalServerErrorException(
         'Failed to login. Please try again later.',
       );
+    }
+  }
+
+  async verifyLogin(email: string, otp: string) {
+    try {
+      const user: any = await this.userService.findByEmail(email);
+
+      if (!user) {
+        return {
+          success: false,
+          messsage: 'Uer not found',
+        };
+      }
+
+      if (user.lastOtp === otp) {
+        const payload = {
+          useremail: user.email,
+          userId: user._id,
+          role: user.role,
+        };
+        return {
+          success: true,
+          token: this.jwtService.sign(payload),
+        };
+      }
+
+      return {
+        success: false,
+        message: 'Invalid otp. Pleease try again.',
+      };
+    } catch (e) {
+      console.log(e);
+      return {
+        success: false,
+        message: 'Failed to verify login. Pleease try again later.',
+      };
     }
   }
 }

@@ -67,4 +67,9 @@ export class MasterDevelopmentController {
   update(@Param('id') id: string, @Body() dto: CreateMasterDevelopmentDto) {
     return this.service.update(id, dto);
   }
+
+  @Get('report/:id')
+  report(@Param('id') id: string) {
+    return this.service.report(id);
+  }
 }
