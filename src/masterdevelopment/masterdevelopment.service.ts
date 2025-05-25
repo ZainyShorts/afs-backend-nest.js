@@ -570,89 +570,6 @@ export class MasterDevelopmentService {
     }
   }
 
-  // async report(id: string): Promise<any> {
-  //   try {
-  //     let noOfPlots = 0;
-  //     let noOfDevelopedPlots = 0;
-  //     let noOfUnderConstructionPlots = 0;
-  //     let noOfVacantPlots = 0;
-  //     const development = await this.MasterDevelopmentModel.findById(id)
-  //       .select(
-  //         'roadLocation developmentName locationQuality facilitiesCategories amentiesCategories',
-  //       )
-  //       .exec();
-
-  //     noOfPlots = await this.subDevelopmentModel
-  //       .find({
-  //         masterDevelopment: { $in: development._id },
-  //       })
-  //       .countDocuments()
-  //       .exec();
-
-  //     noOfPlots += await this.ProjectModel.find({
-  //       masterDevelopment: { $in: development._id },
-  //       plot: { $exists: true, $ne: null },
-  //     }).countDocuments();
-
-  //     noOfDevelopedPlots = await this.subDevelopmentModel
-  //       .find({
-  //         masterDevelopment: { $in: development._id },
-  //         plotStatus: 'Ready',
-  //       })
-  //       .countDocuments()
-  //       .exec();
-
-  //     noOfDevelopedPlots += await this.ProjectModel.find({
-  //       masterDevelopment: { $in: development._id },
-  //       plot: { $exists: true, $ne: null },
-  //       'plot.plotStatus': 'Reay',
-  //     }).countDocuments();
-
-  //     noOfUnderConstructionPlots = await this.subDevelopmentModel
-  //       .find({
-  //         masterDevelopment: { $in: development._id },
-  //         plotStatus: 'Under Construction',
-  //       })
-  //       .countDocuments()
-  //       .exec();
-
-  //     noOfUnderConstructionPlots += await this.ProjectModel.find({
-  //       masterDevelopment: { $in: development._id },
-  //       plot: { $exists: true, $ne: null },
-  //       'plot.plotStatus': 'Under Construction',
-  //     }).countDocuments();
-
-  //     noOfVacantPlots = await this.subDevelopmentModel
-  //       .find({
-  //         masterDevelopment: { $in: development._id },
-  //         plotStatus: 'Vacant',
-  //       })
-  //       .countDocuments()
-  //       .exec();
-
-  //     noOfVacantPlots += await this.ProjectModel.find({
-  //       masterDevelopment: { $in: development._id },
-  //       plot: { $exists: true, $ne: null },
-  //       'plot.plotStatus': 'Vacant',
-  //     }).countDocuments();
-
-  //     return {
-  //       roadLocation: development.roadLocation,
-  //       developmentName: development.developmentName,
-  //       developmentRanking: development.locationQuality,
-  //       noOfFacilities: development.facilitiesCategories.length,
-  //       noOfAmenities: development.amentiesCategories.length,
-  //       noOfPlots,
-  //       noOfDevelopedPlots,
-  //       noOfUnderConstructionPlots,
-  //       noOfVacantPlots,
-  //     };
-  //   } catch (error) {
-  //     console.error('Error finding MasterDevelopment by ID:', error);
-  //     throw new Error('Failed to find MasterDevelopment');
-  //   }
-  // }
-
   async countInventoryByPropertyType(masterDevelopmentId, propertyType) {
     try {
       // Find project IDs of given propertyType under masterDevelopment
@@ -678,13 +595,269 @@ export class MasterDevelopmentService {
     }
   }
 
+  // async report(id: string): Promise<any> {
+  //   try {
+  //     let noOfPlots = 0;
+  //     let noOfDevelopedPlots = 0;
+  //     let noOfUnderConstructionPlots = 0;
+  //     let noOfVacantPlots = 0;
+
+  //     const development = await this.MasterDevelopmentModel.findById(id)
+  //       .select(
+  //         'roadLocation developmentName locationQuality facilitiesCategories amentiesCategories',
+  //       )
+  //       .exec();
+
+  //     if (!development) {
+  //       throw new Error('MasterDevelopment not found');
+  //     }
+
+  //     noOfPlots = await this.subDevelopmentModel
+  //       .find({
+  //         masterDevelopment: id,
+  //       })
+  //       .countDocuments()
+  //       .exec();
+
+  //     noOfPlots += await this.ProjectModel.find({
+  //       masterDevelopment: id,
+  //       plot: { $exists: true, $ne: null },
+  //     }).countDocuments();
+
+  //     noOfDevelopedPlots = await this.subDevelopmentModel
+  //       .find({
+  //         masterDevelopment: id,
+  //         plotStatus: 'Ready',
+  //       })
+  //       .countDocuments()
+  //       .exec();
+
+  //     noOfDevelopedPlots += await this.ProjectModel.find({
+  //       masterDevelopment: id,
+  //       plot: { $exists: true, $ne: null },
+  //       'plot.plotStatus': 'Ready',
+  //     }).countDocuments();
+
+  //     noOfUnderConstructionPlots = await this.subDevelopmentModel
+  //       .find({
+  //         masterDevelopment: id,
+  //         plotStatus: 'Under Construction',
+  //       })
+  //       .countDocuments()
+  //       .exec();
+
+  //     noOfUnderConstructionPlots += await this.ProjectModel.find({
+  //       masterDevelopment: id,
+  //       plot: { $exists: true, $ne: null },
+  //       'plot.plotStatus': 'Under Construction',
+  //     }).countDocuments();
+
+  //     noOfVacantPlots = await this.subDevelopmentModel
+  //       .find({
+  //         masterDevelopment: id,
+  //         plotStatus: 'Vacant',
+  //       })
+  //       .countDocuments()
+  //       .exec();
+
+  //     noOfVacantPlots += await this.ProjectModel.find({
+  //       masterDevelopment: id,
+  //       plot: { $exists: true, $ne: null },
+  //       'plot.plotStatus': 'Vacant',
+  //     }).countDocuments();
+
+  //     const projectHeightsSubDev = await this.subDevelopmentModel.aggregate([
+  //       { $match: { masterDevelopment: id } },
+  //       {
+  //         $group: {
+  //           _id: null,
+  //           minHeight: { $min: '$plotHeight' },
+  //           maxHeight: { $max: '$plotHeight' },
+  //         },
+  //       },
+  //     ]);
+
+  //     const projectHeights = await this.ProjectModel.aggregate([
+  //       {
+  //         $match: { masterDevelopment: id, plot: { $exists: true, $ne: null } },
+  //       },
+  //       {
+  //         $group: {
+  //           _id: null,
+  //           minHeight: { $min: '$plotHeight' },
+  //           maxHeight: { $max: '$plotHeight' },
+  //         },
+  //       },
+  //     ]);
+
+  //     const projectBUASubDev = await this.subDevelopmentModel.aggregate([
+  //       { $match: { masterDevelopment: id } },
+  //       {
+  //         $group: {
+  //           _id: null,
+  //           minBUA: { $min: '$plotBUASqFt' },
+  //           maxBUA: { $max: '$plotBUASqFt' },
+  //         },
+  //       },
+  //     ]);
+
+  //     const projectBUA = await this.ProjectModel.aggregate([
+  //       {
+  //         $match: { masterDevelopment: id, plot: { $exists: true, $ne: null } },
+  //       },
+  //       {
+  //         $group: {
+  //           _id: null,
+  //           minBUA: { $min: '$plotBUASqFt' },
+  //           maxBUA: { $max: '$plotBUASqFt' },
+  //         },
+  //       },
+  //     ]);
+
+  //     const counts = await this.ProjectModel.aggregate([
+  //       { $match: { masterDevelopment: id } },
+  //       {
+  //         $group: {
+  //           _id: '$propertyType',
+  //           count: { $sum: 1 },
+  //         },
+  //       },
+  //     ]);
+
+  //     const totalCount = counts.reduce((acc, cur) => acc + cur.count, 0);
+
+  //     // Format counts into an object, e.g. { Apartment: 10, Hotel: 5, Townhouse: 8 }
+  //     const countsByType = counts.reduce((acc, cur) => {
+  //       acc[cur._id] = cur.count;
+  //       return acc;
+  //     }, {});
+
+  //     // If you want zero for missing types:
+  //     const apartmentCount = countsByType['Apartment'] || 0;
+  //     const hotelCount = countsByType['Hotel'] || 0;
+  //     const townhouseCount = countsByType['Townhouse'] || 0;
+  //     const villaCount = countsByType['Villas'] || 0;
+
+  //     const subDevHeightMin = projectHeightsSubDev[0]?.minHeight ?? Infinity;
+  //     const subDevHeightMax = projectHeightsSubDev[0]?.maxHeight ?? -Infinity;
+
+  //     const projMin = projectHeights[0]?.minHeight ?? Infinity;
+  //     const projMax = projectHeights[0]?.maxHeight ?? -Infinity;
+
+  //     const subDevBUAMin = projectBUASubDev[0]?.minBUA ?? Infinity;
+  //     const subDevBUAMax = projectBUASubDev[0]?.maxBUA ?? -Infinity;
+
+  //     const projMinBUA = projectBUA[0]?.minBUA ?? Infinity;
+  //     const projMaxBUA = projectBUA[0]?.maxBUA ?? -Infinity;
+
+  //     const [
+  //       apartmentCountType,
+  //       villasCountType,
+  //       hotelCountType,
+  //       townhouseCountType,
+  //       labourCampCountType,
+  //     ] = await Promise.all([
+  //       this.countInventoryByPropertyType.call(this, id, 'Apartment'),
+  //       this.countInventoryByPropertyType.call(this, id, 'Villas'),
+  //       this.countInventoryByPropertyType.call(this, id, 'Hotel'),
+  //       this.countInventoryByPropertyType.call(this, id, 'Townhouses'),
+  //       this.countInventoryByPropertyType.call(this, id, 'Labour Camp'),
+  //     ]);
+
+  //     // Availability
+  //     const availabilityCount = await this.InventoryModel.aggregate([
+  //       // 1. Join Inventory → Project to get propertyType & masterDevelopment
+  //       {
+  //         $lookup: {
+  //           from: 'projects',
+  //           localField: 'project',
+  //           foreignField: '_id',
+  //           as: 'project',
+  //         },
+  //       },
+  //       { $unwind: '$project' },
+
+  //       // 2. Filter projects by masterDevelopment id
+  //       {
+  //         $match: {
+  //           'project.masterDevelopment': id,
+  //         },
+  //       },
+
+  //       // 3. Group by propertyType and unitPurpose (Sell/Rent)
+  //       {
+  //         $group: {
+  //           _id: {
+  //             propertyType: '$project.propertyType',
+  //             unitPurpose: '$unitPurpose', // or whatever field says "Sell" or "Rent"
+  //           },
+  //           count: { $sum: 1 },
+  //         },
+  //       },
+  //     ]);
+
+  //     // Initialize result with default zero counts for statuses per propertyType
+  //     const propertyTypes = ['Apartment', 'Villas', 'Townhouses']; // add as needed
+  //     const statuses = ['Sell', 'Rent'];
+
+  //     const result = {};
+
+  //     propertyTypes.forEach((type) => {
+  //       result[type] = {};
+  //       statuses.forEach((status) => {
+  //         result[type][status] = 0;
+  //       });
+  //     });
+
+  //     // Populate counts from aggregation
+  //     availabilityCount.forEach(({ _id, count }) => {
+  //       const { propertyType, status } = _id;
+  //       if (result[propertyType] && statuses.includes(status)) {
+  //         result[propertyType][status] = count;
+  //       }
+  //     });
+
+  //     return {
+  //       roadLocation: development.roadLocation,
+  //       developmentName: development.developmentName,
+  //       developmentRanking: development.locationQuality,
+  //       noOfFacilities: (development.facilitiesCategories || []).length,
+  //       noOfAmenities: (development.amentiesCategories || []).length,
+  //       noOfPlots,
+  //       noOfDevelopedPlots,
+  //       noOfUnderConstructionPlots,
+  //       noOfVacantPlots,
+  //       projectHeight: {
+  //         projectMinHeight: Math.min(subDevHeightMin, projMin),
+  //         projectMaxHeight: Math.max(subDevHeightMax, projMax),
+  //       },
+  //       projectBUA: {
+  //         projectMinBUA: Math.min(subDevBUAMin, projMinBUA),
+  //         projectMaxBUA: Math.max(subDevBUAMax, projMaxBUA),
+  //       },
+  //       PropertyTypes: {
+  //         Apartments: apartmentCount,
+  //         Hoetls: hotelCount,
+  //         Towhouse: townhouseCount,
+  //         Villas: villaCount,
+  //         total: totalCount,
+  //       },
+  //       InventoryType: {
+  //         apartmentCountType,
+  //         villasCountType,
+  //         hotelCountType,
+  //         townhouseCountType,
+  //         labourCampCountType,
+  //       },
+  //       Availability: result,
+  //     };
+  //   } catch (error) {
+  //     console.error('Error finding MasterDevelopment by ID:', error);
+  //     throw new Error('Failed to find MasterDevelopment');
+  //   }
+  // }
   async report(id: string): Promise<any> {
     try {
-      let noOfPlots = 0;
-      let noOfDevelopedPlots = 0;
-      let noOfUnderConstructionPlots = 0;
-      let noOfVacantPlots = 0;
-
       const development = await this.MasterDevelopmentModel.findById(id)
         .select(
           'roadLocation developmentName locationQuality facilitiesCategories amentiesCategories',
@@ -695,108 +868,79 @@ export class MasterDevelopmentService {
         throw new Error('MasterDevelopment not found');
       }
 
-      noOfPlots = await this.subDevelopmentModel
-        .find({
+      // Helper to count documents for subDevelopment and ProjectModel by plotStatus
+      const countByStatus = async (status: string | null) => {
+        const subDevFilter: any = { masterDevelopment: id };
+        const projFilter: any = {
           masterDevelopment: id,
-        })
-        .countDocuments()
-        .exec();
+          plot: { $exists: true, $ne: null },
+        };
 
-      noOfPlots += await this.ProjectModel.find({
-        masterDevelopment: id,
-        plot: { $exists: true, $ne: null },
-      }).countDocuments();
+        if (status) {
+          subDevFilter.plotStatus = status;
+          projFilter['plot.plotStatus'] = status;
+        }
 
-      noOfDevelopedPlots = await this.subDevelopmentModel
-        .find({
-          masterDevelopment: id,
-          plotStatus: 'Ready',
-        })
-        .countDocuments()
-        .exec();
+        const [subDevCount, projCount] = await Promise.all([
+          this.subDevelopmentModel.countDocuments(subDevFilter),
+          this.ProjectModel.countDocuments(projFilter),
+        ]);
 
-      noOfDevelopedPlots += await this.ProjectModel.find({
-        masterDevelopment: id,
-        plot: { $exists: true, $ne: null },
-        'plot.plotStatus': 'Ready',
-      }).countDocuments();
+        return subDevCount + projCount;
+      };
 
-      noOfUnderConstructionPlots = await this.subDevelopmentModel
-        .find({
-          masterDevelopment: id,
-          plotStatus: 'Under Construction',
-        })
-        .countDocuments()
-        .exec();
+      // Total plots (no plotStatus filter)
+      const totalPlots = await countByStatus(null);
 
-      noOfUnderConstructionPlots += await this.ProjectModel.find({
-        masterDevelopment: id,
-        plot: { $exists: true, $ne: null },
-        'plot.plotStatus': 'Under Construction',
-      }).countDocuments();
+      // Count by plot statuses in parallel
+      const [noOfDevelopedPlots, noOfUnderConstructionPlots, noOfVacantPlots] =
+        await Promise.all([
+          countByStatus('Ready'),
+          countByStatus('Under Construction'),
+          countByStatus('Vacant'),
+        ]);
 
-      noOfVacantPlots = await this.subDevelopmentModel
-        .find({
-          masterDevelopment: id,
-          plotStatus: 'Vacant',
-        })
-        .countDocuments()
-        .exec();
-
-      noOfVacantPlots += await this.ProjectModel.find({
-        masterDevelopment: id,
-        plot: { $exists: true, $ne: null },
-        'plot.plotStatus': 'Vacant',
-      }).countDocuments();
-
-      const projectHeightsSubDev = await this.subDevelopmentModel.aggregate([
-        { $match: { masterDevelopment: id } },
-        {
-          $group: {
-            _id: null,
-            minHeight: { $min: '$plotHeight' },
-            maxHeight: { $max: '$plotHeight' },
+      // Helper to get min/max of a field combining subDevelopment and ProjectModel
+      const aggregateMinMax = async (
+        field: string,
+        model: any,
+        filter: object,
+      ): Promise<{ min: number; max: number }> => {
+        const result = await model.aggregate([
+          { $match: filter },
+          {
+            $group: {
+              _id: null,
+              minVal: { $min: `$${field}` },
+              maxVal: { $max: `$${field}` },
+            },
           },
-        },
+        ]);
+        return {
+          min: result[0]?.minVal ?? Infinity,
+          max: result[0]?.maxVal ?? -Infinity,
+        };
+      };
+
+      // Parallel aggregation calls for height and BUA
+      const [subDevHeight, projHeight, subDevBUA, projBUA] = await Promise.all([
+        aggregateMinMax('plotHeight', this.subDevelopmentModel, {
+          masterDevelopment: id,
+        }),
+        aggregateMinMax('plotHeight', this.ProjectModel, {
+          masterDevelopment: id,
+          plot: { $exists: true, $ne: null },
+        }),
+        aggregateMinMax('plotBUASqFt', this.subDevelopmentModel, {
+          masterDevelopment: id,
+        }),
+        aggregateMinMax('plotBUASqFt', this.ProjectModel, {
+          masterDevelopment: id,
+          plot: { $exists: true, $ne: null },
+        }),
       ]);
 
-      const projectHeights = await this.ProjectModel.aggregate([
-        {
-          $match: { masterDevelopment: id, plot: { $exists: true, $ne: null } },
-        },
-        {
-          $group: {
-            _id: null,
-            minHeight: { $min: '$plotHeight' },
-            maxHeight: { $max: '$plotHeight' },
-          },
-        },
-      ]);
-
-      const projectBUASubDev = await this.subDevelopmentModel.aggregate([
-        { $match: { masterDevelopment: id } },
-        {
-          $group: {
-            _id: null,
-            minBUA: { $min: '$plotBUASqFt' },
-            maxBUA: { $max: '$plotBUASqFt' },
-          },
-        },
-      ]);
-
-      const projectBUA = await this.ProjectModel.aggregate([
-        {
-          $match: { masterDevelopment: id, plot: { $exists: true, $ne: null } },
-        },
-        {
-          $group: {
-            _id: null,
-            minBUA: { $min: '$plotBUASqFt' },
-            maxBUA: { $max: '$plotBUASqFt' },
-          },
-        },
-      ]);
-
+      // Aggregate counts by propertyType in ProjectModel
       const counts = await this.ProjectModel.aggregate([
         { $match: { masterDevelopment: id } },
         {
@@ -807,33 +951,24 @@ export class MasterDevelopmentService {
         },
       ]);
 
-      console.log(counts);
       const totalCount = counts.reduce((acc, cur) => acc + cur.count, 0);
 
-      // Format counts into an object, e.g. { Apartment: 10, Hotel: 5, Townhouse: 8 }
-      const countsByType = counts.reduce((acc, cur) => {
-        acc[cur._id] = cur.count;
-        return acc;
-      }, {});
+      // Map counts by property type with fallback zero
+      const countsByType = counts.reduce(
+        (acc, cur) => {
+          acc[cur._id] = cur.count;
+          return acc;
+        },
+        {} as Record<string, number>,
+      );
 
-      // If you want zero for missing types:
+      // Normalize property types with safe defaults
       const apartmentCount = countsByType['Apartment'] || 0;
       const hotelCount = countsByType['Hotel'] || 0;
       const townhouseCount = countsByType['Townhouse'] || 0;
       const villaCount = countsByType['Villas'] || 0;
 
-      const subDevHeightMin = projectHeightsSubDev[0]?.minHeight ?? Infinity;
-      const subDevHeightMax = projectHeightsSubDev[0]?.maxHeight ?? -Infinity;
-
-      const projMin = projectHeights[0]?.minHeight ?? Infinity;
-      const projMax = projectHeights[0]?.maxHeight ?? -Infinity;
-
-      const subDevBUAMin = projectBUASubDev[0]?.minBUA ?? Infinity;
-      const subDevBUAMax = projectBUASubDev[0]?.maxBUA ?? -Infinity;
-
-      const projMinBUA = projectBUA[0]?.minBUA ?? Infinity;
-      const projMaxBUA = projectBUA[0]?.maxBUA ?? -Infinity;
-
+      // Count inventory by property type in parallel
       const [
         apartmentCountType,
         villasCountType,
@@ -841,16 +976,15 @@ export class MasterDevelopmentService {
         townhouseCountType,
         labourCampCountType,
       ] = await Promise.all([
-        this.countInventoryByPropertyType.call(this, id, 'Apartment'),
-        this.countInventoryByPropertyType.call(this, id, 'Villas'),
-        this.countInventoryByPropertyType.call(this, id, 'Hotel'),
-        this.countInventoryByPropertyType.call(this, id, 'Townhouses'),
-        this.countInventoryByPropertyType.call(this, id, 'Labour Camp'),
+        this.countInventoryByPropertyType(id, 'Apartment'),
+        this.countInventoryByPropertyType(id, 'Villas'),
+        this.countInventoryByPropertyType(id, 'Hotel'),
+        this.countInventoryByPropertyType(id, 'Townhouses'),
+        this.countInventoryByPropertyType(id, 'Labour Camp'),
       ]);
 
-      // Availability
+      // Availability aggregation
       const availabilityCount = await this.InventoryModel.aggregate([
-        // 1. Join Inventory → Project to get propertyType & masterDevelopment
         {
           $lookup: {
             from: 'projects',
@@ -860,44 +994,40 @@ export class MasterDevelopmentService {
           },
         },
         { $unwind: '$project' },
-
-        // 2. Filter projects by masterDevelopment id
         {
-          $match: {
-            'project.masterDevelopment': id,
-          },
+          $match: { 'project.masterDevelopment': id },
         },
-
-        // 3. Group by propertyType and unitPurpose (Sell/Rent)
         {
           $group: {
             _id: {
               propertyType: '$project.propertyType',
-              unitPurpose: '$unitPurpose', // or whatever field says "Sell" or "Rent"
+              unitPurpose: '$unitPurpose',
             },
             count: { $sum: 1 },
           },
         },
       ]);
 
-      // Initialize result with default zero counts for statuses per propertyType
-      const propertyTypes = ['Apartment', 'Villas', 'Townhouses']; // add as needed
+      // Initialize result with default zero counts
+      const propertyTypes = ['Apartment', 'Villas', 'Townhouses'];
       const statuses = ['Sell', 'Rent'];
 
-      const result = {};
-
+      const availabilityResult: Record<string, Record<string, number>> = {};
       propertyTypes.forEach((type) => {
-        result[type] = {};
+        availabilityResult[type] = {};
         statuses.forEach((status) => {
-          result[type][status] = 0;
+          availabilityResult[type][status] = 0;
         });
       });
 
-      // Populate counts from aggregation
+      // Fill availability counts
       availabilityCount.forEach(({ _id, count }) => {
-        const { propertyType, status } = _id;
-        if (result[propertyType] && statuses.includes(status)) {
-          result[propertyType][status] = count;
+        const { propertyType, unitPurpose } = _id;
+        if (
+          availabilityResult[propertyType] &&
+          statuses.includes(unitPurpose)
+        ) {
+          availabilityResult[propertyType][unitPurpose] = count;
         }
       });
 
@@ -907,22 +1037,22 @@ export class MasterDevelopmentService {
         developmentRanking: development.locationQuality,
         noOfFacilities: (development.facilitiesCategories || []).length,
         noOfAmenities: (development.amentiesCategories || []).length,
-        noOfPlots,
+        noOfPlots: totalPlots,
         noOfDevelopedPlots,
         noOfUnderConstructionPlots,
         noOfVacantPlots,
         projectHeight: {
-          projectMinHeight: Math.min(subDevHeightMin, projMin),
-          projectMaxHeight: Math.max(subDevHeightMax, projMax),
+          projectMinHeight: Math.min(subDevHeight.min, projHeight.min),
+          projectMaxHeight: Math.max(subDevHeight.max, projHeight.max),
         },
         projectBUA: {
-          projectMinBUA: Math.min(subDevBUAMin, projMinBUA),
-          projectMaxBUA: Math.max(subDevBUAMax, projMaxBUA),
+          projectMinBUA: Math.min(subDevBUA.min, projBUA.min),
+          projectMaxBUA: Math.max(subDevBUA.max, projBUA.max),
         },
         PropertyTypes: {
           Apartments: apartmentCount,
-          Hoetls: hotelCount,
-          Towhouse: townhouseCount,
+          Hotels: hotelCount,
+          Townhouse: townhouseCount,
           Villas: villaCount,
           total: totalCount,
         },
@@ -933,7 +1063,7 @@ export class MasterDevelopmentService {
           townhouseCountType,
           labourCampCountType,
         },
-        Availability: result,
+        Availability: availabilityResult,
       };
     } catch (error) {
       console.error('Error finding MasterDevelopment by ID:', error);
