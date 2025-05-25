@@ -653,6 +653,31 @@ export class MasterDevelopmentService {
   //   }
   // }
 
+  async countInventoryByPropertyType(masterDevelopmentId, propertyType) {
+    try {
+      // Find project IDs of given propertyType under masterDevelopment
+      const projects = await this.ProjectModel.find({
+        masterDevelopment: masterDevelopmentId,
+        propertyType,
+      }).select('_id');
+
+      const projectIds = projects.map((p) => p._id);
+
+      // Count inventory with project in those IDs
+      const count = await this.InventoryModel.countDocuments({
+        project: { $in: projectIds },
+      });
+
+      return count;
+    } catch (error) {
+      console.error(
+        `Error counting inventory for propertyType ${propertyType}:`,
+        error,
+      );
+      throw error; // rethrow or handle as needed
+    }
+  }
+
   async report(id: string): Promise<any> {
     try {
       let noOfPlots = 0;
@@ -782,6 +807,7 @@ export class MasterDevelopmentService {
         },
       ]);
 
+      console.log(counts);
       const totalCount = counts.reduce((acc, cur) => acc + cur.count, 0);
 
       // Format counts into an object, e.g. { Apartment: 10, Hotel: 5, Townhouse: 8 }
@@ -808,6 +834,73 @@ export class MasterDevelopmentService {
       const projMinBUA = projectBUA[0]?.minBUA ?? Infinity;
       const projMaxBUA = projectBUA[0]?.maxBUA ?? -Infinity;
 
+      const [
+        apartmentCountType,
+        villasCountType,
+        hotelCountType,
+        townhouseCountType,
+        labourCampCountType,
+      ] = await Promise.all([
+        this.countInventoryByPropertyType.call(this, id, 'Apartment'),
+        this.countInventoryByPropertyType.call(this, id, 'Villas'),
+        this.countInventoryByPropertyType.call(this, id, 'Hotel'),
+        this.countInventoryByPropertyType.call(this, id, 'Townhouses'),
+        this.countInventoryByPropertyType.call(this, id, 'Labour Camp'),
+      ]);
+
+      // Availability
+      const availabilityCount = await this.InventoryModel.aggregate([
+        // 1. Join Inventory → Project to get propertyType & masterDevelopment
+        {
+          $lookup: {
+            from: 'projects',
+            localField: 'project',
+            foreignField: '_id',
+            as: 'project',
+          },
+        },
+        { $unwind: '$project' },
+
+        // 2. Filter projects by masterDevelopment id
+        {
+          $match: {
+            'project.masterDevelopment': id,
+          },
+        },
+
+        // 3. Group by propertyType and unitPurpose (Sell/Rent)
+        {
+          $group: {
+            _id: {
+              propertyType: '$project.propertyType',
+              unitPurpose: '$unitPurpose', // or whatever field says "Sell" or "Rent"
+            },
+            count: { $sum: 1 },
+          },
+        },
+      ]);
+
+      // Initialize result with default zero counts for statuses per propertyType
+      const propertyTypes = ['Apartment', 'Villas', 'Townhouses']; // add as needed
+      const statuses = ['Sell', 'Rent'];
+
+      const result = {};
+
+      propertyTypes.forEach((type) => {
+        result[type] = {};
+        statuses.forEach((status) => {
+          result[type][status] = 0;
+        });
+      });
+
+      // Populate counts from aggregation
+      availabilityCount.forEach(({ _id, count }) => {
+        const { propertyType, status } = _id;
+        if (result[propertyType] && statuses.includes(status)) {
+          result[propertyType][status] = count;
+        }
+      });
+
       return {
         roadLocation: development.roadLocation,
         developmentName: development.developmentName,
@@ -831,8 +924,16 @@ export class MasterDevelopmentService {
           Hoetls: hotelCount,
           Towhouse: townhouseCount,
           Villas: villaCount,
-          total: apartmentCount + hotelCount + townhouseCount + villaCount,
+          total: totalCount,
         },
+        InventoryType: {
+          apartmentCountType,
+          villasCountType,
+          hotelCountType,
+          townhouseCountType,
+          labourCampCountType,
+        },
+        Availability: result,
       };
     } catch (error) {
       console.error('Error finding MasterDevelopment by ID:', error);
