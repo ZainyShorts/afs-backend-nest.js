@@ -11,6 +11,7 @@ import { AuthService } from './auth.service';
 import { LoginDto } from 'src/user/dto/login-user.dto';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { Response } from 'express';
+import { serialize } from 'cookie';
 
 @Controller('auth')
 export class AuthController {
@@ -37,15 +38,19 @@ export class AuthController {
     if (result.success === false) {
       return result;
     }
-    // Set httpOnly cookie
-    res.cookie('jwt', result.token, {
-      httpOnly: true,
-      secure: false, // set to true if using https
-      maxAge: 3600000,
-      sameSite: 'lax',
-    });
 
-    return { message: 'Login successful', success: true };
+    res.setHeader(
+      'Set-Cookie',
+      serialize('token', result.token, {
+        httpOnly: true, // Cookie not accessible by client JS (better security)
+        secure: process.env.NODE_ENV === 'production', // only over HTTPS in prod
+        maxAge: 60 * 60 * 24 * 7, // 7 days
+        path: '/', // cookie valid for entire site
+        // sameSite: process.env.NODE_ENV === 'production' ? 'lax' : 'none',
+        sameSite: 'strict',
+      }),
+    );
+    return { message: 'Login successful', success: true, token: result.token };
   }
 
   @UseGuards(JwtAuthGuard)

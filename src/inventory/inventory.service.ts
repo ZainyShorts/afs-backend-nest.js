@@ -276,12 +276,15 @@ export class InventoryService {
             .select('developmentName');
 
         if (masterDevelopmentDocument) {
+          console.log('if');
+          console.log(data[0]);
           data = data.filter(
             (doc) =>
               doc.project?.masterDevelopment?.developmentName ===
               masterDevelopmentDocument.developmentName,
           );
         } else {
+          console.log('else');
           data = [];
         }
       }
@@ -292,13 +295,26 @@ export class InventoryService {
               roadLocation: filter.roadLocation,
             })
             .select('roadLocation');
-        // console.log(masterDevelopmentDocument);
+        console.log('masterDevelopmentDocument:', masterDevelopmentDocument);
+
         if (masterDevelopmentDocument) {
-          data = data.filter(
-            (doc) =>
-              doc.project?.masterDevelopment?.roadLocation ===
-              masterDevelopmentDocument.roadLocation,
-          );
+          console.log('Before filter, first item:', data[0]);
+
+          const filterLocation = masterDevelopmentDocument.roadLocation.trim();
+
+          data = data.filter((doc, index) => {
+            const docLocation =
+              doc.project?.masterDevelopment?.roadLocation?.trim();
+            const isMatch = docLocation === filterLocation;
+
+            console.log(
+              `Filtering doc[${index}]: docLocation="${docLocation}", filterLocation="${filterLocation}", match=${isMatch}`,
+            );
+
+            return isMatch;
+          });
+
+          console.log('After filter, first item:', data[0]);
         } else {
           data = [];
         }

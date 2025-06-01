@@ -41,10 +41,10 @@ export class MasterDevelopment extends Document {
   @Prop({ type: [String] })
   pictures: string[];
 
-  @Prop({ type: [String], enum: FacilitiesCategory, required: true })
+  @Prop({ type: [String], enum: FacilitiesCategory })
   facilitiesCategories: string[];
 
-  @Prop({ type: [String], enum: AmenitiesCategory, required: true })
+  @Prop({ type: [String], enum: AmenitiesCategory })
   amentiesCategories: string[];
 }
 

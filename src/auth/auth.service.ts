@@ -47,8 +47,15 @@ export class AuthService {
         };
       }
 
+      if (!user.access) {
+        return {
+          success: false,
+          message: 'Your Access blocked by admin 🚫',
+        };
+      }
+
       // Ban duration - 60 seconds for testing, update to 3600000 for production
-      const BAN_DURATION = 60 * 1000;
+      const BAN_DURATION = 60 * 60 * 1000;
 
       if (user.ban) {
         const now = Date.now();
