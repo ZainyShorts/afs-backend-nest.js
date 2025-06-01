@@ -36,13 +36,14 @@ export class MasterDevelopmentController {
 
   @Get()
   findAll(
-    @Query() filter: MasterDevelopmentFilterInput,
     @Query('page') page = 1,
     @Query('limit') limit = 10,
     @Query('sortBy') sortBy = 'createdAt',
     @Query('sortOrder') sortOrder = 'desc',
+    @Query() filter?: MasterDevelopmentFilterInput,
     @Query('fields') fields?: string,
   ) {
+    console.log(filter);
     return this.service.findAll(
       +page,
       +limit,

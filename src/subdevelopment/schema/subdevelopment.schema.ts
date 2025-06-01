@@ -16,14 +16,14 @@ export class SubDevelopment extends Document {
   @Prop({ required: true, trim: true })
   subDevelopment: string;
 
-  @Prop({ default: 0 })
-  plotNumber: number;
+  @Prop({ required: true, trim: true })
+  plotNumber: string;
 
-  @Prop({ default: 0 })
+  @Prop({ required: true })
   plotHeight: number;
 
-  @Prop({ enum: PropertyType, type: [String], required: true })
-  plotPermission: string[];
+  @Prop({ required: true })
+  plotPermission: PropertyType[];
 
   @Prop({ default: 0 })
   plotSizeSqFt: number;
@@ -49,10 +49,10 @@ export class SubDevelopment extends Document {
   @Prop({ type: [String] })
   pictures: string[];
 
-  @Prop({ type: [String], enum: FacilitiesCategory, required: true })
+  @Prop({ type: [String], enum: FacilitiesCategory })
   facilitiesCategories: string[];
 
-  @Prop({ type: [String], enum: AmenitiesCategory, required: true })
+  @Prop({ type: [String], enum: AmenitiesCategory })
   amentiesCategories: string[];
 }
 

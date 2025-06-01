@@ -108,6 +108,8 @@ export class MasterDevelopmentService {
     try {
       const query: any = {};
 
+      console.log(filter.developmentName);
+
       if (filter) {
         if (filter.developmentName) {
           query.developmentName = {
@@ -336,7 +338,7 @@ export class MasterDevelopmentService {
 
   async delete(id: string): Promise<void> {
     try {
-      await this.MasterDevelopmentModel.findByIdAndDelete(id).exec();
+      await this.MasterDevelopmentModel.findOneAndDelete({ _id: id }).exec();
     } catch (error) {
       console.error('Error deleting MasterDevelopment by ID:', error);
       throw new Error('Failed to delete MasterDevelopment');
@@ -418,7 +420,19 @@ export class MasterDevelopmentService {
       const sheet = workbook.Sheets[sheetName];
       const jsonData = XLSX.utils.sheet_to_json(sheet);
 
-      const formattedData = jsonData.map((row: any, index: number) => {
+      const requiredFields = [
+        'country',
+        'city',
+        'roadLocation',
+        'developmentName',
+        'locationQuality',
+        'totalAreaSqFt',
+      ];
+
+      const validRows = [];
+      const invalidRows = [];
+
+      jsonData.forEach((row: any, index: number) => {
         const formattedRow: any = {};
         for (const key in row) {
           const cleanedKey = key.replace(/\n/g, '').trim();
@@ -433,41 +447,29 @@ export class MasterDevelopmentService {
           (formattedRow.facilitiesAreaSqFt || 0) +
           (formattedRow.amentiesAreaSqFt || 0);
 
-        const requiredFields = [
-          'country',
-          'city',
-          'roadLocation',
-          'developmentName',
-          'locationQuality',
-          'totalAreaSqFt',
-        ];
-
-        // const optionFields = [
-        //   'buaAreaSqFt',
-        //   'facilitiesAreaSqFt',
-        //   'amentiesAreaSqFt',
-        // ];
-
-        for (const field of requiredFields) {
-          if (
+        // Check required fields
+        const missingFields = requiredFields.filter(
+          (field) =>
             formattedRow[field] === undefined ||
             formattedRow[field] === null ||
-            formattedRow[field] === ''
-          ) {
-            console.log(`Missing or empty field: ${field} row at ${index}`);
-            throw new BadRequestException(
-              'File format is not correct. Missing or empty field: ${field} row at ${index}',
-            );
-          }
+            formattedRow[field] === '',
+        );
+
+        if (missingFields.length > 0) {
+          console.log(
+            `Skipping row ${index} due to missing fields: ${missingFields.join(', ')}`,
+          );
+          invalidRows.push({ index, missingFields, row: formattedRow });
+          return; // skip this row
         }
 
-        return formattedRow;
+        validRows.push(formattedRow);
       });
 
-      // === Pre-check: Fetch existing developmentNames in one query ===
-      const allDevelopmentNames = formattedData.map(
-        (row) => row.developmentName,
-      );
+      // Now check duplicates among validRows as before...
+
+      // === Fetch existing developments ===
+      const allDevelopmentNames = validRows.map((row) => row.developmentName);
 
       const existingDevelopments = await this.MasterDevelopmentModel.find(
         { developmentName: { $in: allDevelopmentNames } },
@@ -478,40 +480,35 @@ export class MasterDevelopmentService {
         existingDevelopments.map((r) => r.developmentName),
       );
 
-      // === Pre-filter: remove duplicates BEFORE inserting ===
-      let duplicates = 0;
+      let dbDuplicates = 0;
+      let fileDuplicates = 0;
       const seenDevelopmentNames = new Set();
 
-      const filteredData = formattedData.filter((row) => {
+      const filteredData = validRows.filter((row) => {
         if (existingNameSet.has(row.developmentName)) {
-          // Duplicate because it exists in DB
-          duplicates++;
+          dbDuplicates++;
           return false;
         }
-
         if (seenDevelopmentNames.has(row.developmentName)) {
-          // Duplicate inside uploaded file
-          duplicates++;
+          fileDuplicates++;
           return false;
         }
-
-        // If not seen, add to seen set
         seenDevelopmentNames.add(row.developmentName);
-        return true; // Keep this one
+        return true;
       });
 
       if (filteredData.length === 0) {
-        // No new data to insert
         fs.unlinkSync(filePath);
         return {
           success: true,
           totalEntries: jsonData.length,
           insertedEntries: 0,
-          skippedDuplicateEntires: existingDevelopments.length + duplicates,
+          skippedDuplicateEntries: dbDuplicates + fileDuplicates,
+          skippedInvalidEntries: invalidRows.length,
         };
       }
 
-      // Deduplicate in-memory (optional if needed)
+      // Deduplicate in-memory (optional)
       const uniqueRecords = new Map();
       filteredData.forEach((dto) => {
         if (this.validateEntry(dto)) {
@@ -526,9 +523,7 @@ export class MasterDevelopmentService {
 
       for (let i = 0; i < bulkInsertData.length; i += chunkSize) {
         const chunk = bulkInsertData.slice(i, i + chunkSize);
-
         if (chunk.length === 0) continue;
-
         try {
           await this.MasterDevelopmentModel.insertMany(chunk, {
             ordered: false,
@@ -545,12 +540,11 @@ export class MasterDevelopmentService {
         success: true,
         totalEntries: jsonData.length,
         insertedEntries: insertedDataCount,
-        skippedDuplicateEntires: existingDevelopments.length + duplicates,
+        skippedDuplicateEntries: dbDuplicates + fileDuplicates,
+        skippedInvalidEntries: invalidRows.length,
+        invalidRows, // optionally return details for logging or review
       };
     } catch (error) {
-      if (fs.existsSync(filePath)) {
-        fs.unlinkSync(filePath);
-      }
       if (error.response?.statusCode === 400) {
         throw new BadRequestException(
           'File format is not correct. Missing or empty fields.',
@@ -559,6 +553,10 @@ export class MasterDevelopmentService {
       throw new InternalServerErrorException(
         error?.response?.message || 'Internal server error occurred.',
       );
+    } finally {
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+      }
     }
   }
 
