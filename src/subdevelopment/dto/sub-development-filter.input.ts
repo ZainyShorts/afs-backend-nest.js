@@ -2,7 +2,7 @@
 
 export class SubDevelopmentFilterInput {
   subDevelopment?: string;
-  plotNumber?: number;
+  plotNumber?: string;
   plotStatus?: string;
 
   buaAreaSqFtRange?: { min?: number; max?: number };

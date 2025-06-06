@@ -1,96 +1,130 @@
-import { IsString, IsNumber, IsArray, IsEnum } from 'class-validator';
+import {
+  IsString,
+  IsNumber,
+  IsArray,
+  IsEnum,
+  IsOptional,
+} from 'class-validator';
 import { Field, InputType } from '@nestjs/graphql';
-import { UnitPurpose } from 'utils/enum/enums';
+import { UnitPurpose, unitType } from 'utils/enum/enums';
 
 @InputType()
 export class CreateInventorytDto {
   @Field(() => String)
   @IsString()
-  projectName: string;
-
-  // @Field(() => String)
-  // @IsEnum(PropertyType)
-  // propertyType: string;
+  project: string; // This should be the project ID (ObjectId as string)
 
   @Field(() => String)
   @IsString()
   unitNumber: string;
 
-  @Field(() => String)
+  @Field(() => String, { nullable: true })
+  @IsOptional()
   @IsString()
-  unitHeight: string;
+  unitHeight?: string;
+
+  @Field(() => String, { nullable: true })
+  @IsOptional()
+  @IsString()
+  unitInternalDesign?: string;
+
+  @Field(() => String, { nullable: true })
+  @IsOptional()
+  @IsString()
+  unitExternalDesign?: string;
+
+  @Field(() => Number, { nullable: true })
+  @IsOptional()
+  @IsNumber()
+  plotSizeSqFt?: number;
+
+  @Field(() => Number, { nullable: true })
+  @IsOptional()
+  @IsNumber()
+  BuaSqFt?: number;
+
+  @Field(() => Number, { nullable: true })
+  @IsOptional()
+  @IsNumber()
+  noOfBedRooms?: number;
 
   @Field(() => String)
+  @IsEnum(unitType)
+  unitType: string;
+
+  @Field(() => String, { nullable: true })
+  @IsOptional()
   @IsString()
-  unitInternalDesign: string;
+  rentedAt?: string;
 
-  @Field(() => String)
-  @IsNumber()
-  unitExternalDesign: string;
-
-  @Field(() => Number)
-  @IsNumber()
-  plotSizeSqFt: number;
-
-  @Field(() => Number)
-  @IsNumber()
-  BuaSqFt: number;
-
-  @Field(() => Number)
+  @Field(() => String, { nullable: true })
+  @IsOptional()
   @IsString()
-  noOfBedRooms: number;
+  rentedTill?: string;
 
-  @Field(() => [String])
+  @Field(() => Number, { nullable: true })
+  @IsOptional()
+  @IsNumber()
+  rentalPrice?: number;
+
+  @Field(() => [String], { nullable: true })
+  @IsOptional()
   @IsArray()
   @IsString({ each: true })
-  unitView: string[];
-
-  @Field(() => [String])
-  @IsArray()
-  @IsString({ each: true })
-  pictures: string[];
+  unitView?: string[];
 
   @Field(() => String)
   @IsEnum(UnitPurpose)
   unitPurpose: string;
 
-  @Field(() => String)
-  @IsEnum(UnitPurpose)
-  unitType: string;
-
-  @Field(() => String)
+  @Field(() => String, { nullable: true })
+  @IsOptional()
   @IsString()
-  listingDate: string;
+  listingDate?: string;
 
-  @Field(() => String)
+  @Field(() => Number, { nullable: true })
+  @IsOptional()
   @IsNumber()
-  chequeFrequency: string;
+  purchasePrice?: number;
 
-  @Field(() => Number)
+  @Field(() => Number, { nullable: true })
+  @IsOptional()
   @IsNumber()
-  resalePrice: number;
+  marketPrice?: number;
 
-  @Field(() => Number)
+  @Field(() => Number, { nullable: true })
+  @IsOptional()
   @IsNumber()
-  salePrice: number;
+  askingPrice?: number;
 
-  @Field(() => Number)
+  @Field(() => Number, { nullable: true })
+  @IsOptional()
   @IsNumber()
-  rentedtAt: number;
+  premiumAndLoss?: number;
 
-  @Field(() => Number)
+  @Field(() => Number, { nullable: true })
+  @IsOptional()
   @IsNumber()
-  originalPrice: number;
+  marketRent?: number;
 
-  @Field(() => Number)
+  @Field(() => Number, { nullable: true })
+  @IsOptional()
   @IsNumber()
-  paidTODevelopers: number;
+  askingRent?: number;
 
-  @Field(() => Number)
-  @IsNumber()
-  payableTODevelopers: number;
+  @Field(() => [String], { nullable: true })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  pictures?: string[];
 
-  @Field(() => Number)
-  @IsNumber()
-  premiumAndLoss: number;
+  @Field(() => String, { nullable: true })
+  @IsOptional()
+  @IsString()
+  paidTODevelopers?: string;
+
+  @Field(() => String, { nullable: true })
+  @IsOptional()
+  @IsString()
+  payableTODevelopers?: string;
 }

@@ -88,9 +88,11 @@ export class SubDevelopmentService {
           };
         }
 
-        if (filter.plotNumber !== undefined) {
+        if (filter.plotNumber) {
           query.plotNumber = filter.plotNumber;
         }
+
+        console.log(query)
 
         if (filter.plotStatus) {
           query.plotStatus = filter.plotStatus;

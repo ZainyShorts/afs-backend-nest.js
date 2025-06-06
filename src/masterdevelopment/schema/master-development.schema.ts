@@ -52,7 +52,7 @@ export const MasterDevelopmentSchema =
   SchemaFactory.createForClass(MasterDevelopment);
 
 MasterDevelopmentSchema.pre('findOneAndDelete', async function (next) {
-  const masterDev = await this.model.findOne(this.getFilter());
+  const masterDev = await this.model.findOne(this.getFilter()).select('_id');
   if (masterDev) {
     // Delete all SubDevelopment docs linked to this MasterDevelopment
     // await this.model.db.collection('subdevelopments').deleteMany({

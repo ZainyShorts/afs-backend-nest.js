@@ -5,17 +5,19 @@ import {
   IsEnum,
   IsOptional,
 } from 'class-validator';
-import { UnitPurpose } from 'utils/enum/enums';
+import { UnitPurpose, unitType } from 'utils/enum/enums';
 
 export class UpdateInventoryDto {
+  @IsOptional()
   @IsString()
-  project: string;
-
-  @IsString()
-  unitNumber: string;
+  project?: string; // ObjectId string
 
   @IsOptional()
-  @IsNumber()
+  @IsString()
+  unitNumber?: string;
+
+  @IsOptional()
+  @IsString()
   unitHeight?: string;
 
   @IsOptional()
@@ -34,35 +36,13 @@ export class UpdateInventoryDto {
   @IsNumber()
   BuaSqFt?: number;
 
-  @IsNumber()
-  noOfBedRooms: number;
-
-  @IsArray()
-  @IsString({ each: true })
-  unitView: string[];
-
-  @IsArray()
-  @IsString({ each: true })
-  pictures: string[];
-
-  @IsEnum(UnitPurpose)
-  unitPurpose: string;
-
-  @IsOptional()
-  @IsString()
-  listingDate?: string;
-
-  @IsOptional()
-  @IsString()
-  chequeFrequency?: string;
-
   @IsOptional()
   @IsNumber()
-  rentalPrice?: number;
+  noOfBedRooms?: number;
 
   @IsOptional()
-  @IsNumber()
-  salePrice?: number;
+  @IsEnum(unitType)
+  unitType?: string;
 
   @IsOptional()
   @IsString()
@@ -73,12 +53,50 @@ export class UpdateInventoryDto {
   rentedTill?: string;
 
   @IsOptional()
+  @IsNumber()
+  rentalPrice?: number;
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  unitView?: string[];
+
+  @IsOptional()
+  @IsEnum(UnitPurpose)
+  unitPurpose?: string;
+
+  @IsOptional()
   @IsString()
-  vacantOn?: string;
+  listingDate?: string;
 
   @IsOptional()
   @IsNumber()
-  originalPrice?: number;
+  purchasePrice?: number;
+
+  @IsOptional()
+  @IsNumber()
+  marketPrice?: number;
+
+  @IsOptional()
+  @IsNumber()
+  askingPrice?: number;
+
+  @IsOptional()
+  @IsNumber()
+  premiumAndLoss?: number;
+
+  @IsOptional()
+  @IsNumber()
+  marketRent?: number;
+
+  @IsOptional()
+  @IsNumber()
+  askingRent?: number;
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  pictures?: string[];
 
   @IsOptional()
   @IsString()
@@ -87,8 +105,4 @@ export class UpdateInventoryDto {
   @IsOptional()
   @IsString()
   payableTODevelopers?: string;
-
-  @IsOptional()
-  @IsNumber()
-  premiumAndLoss?: number;
 }

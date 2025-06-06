@@ -31,31 +31,8 @@ export class Inventory extends Document {
   @Prop({ type: Number })
   noOfBedRooms: number;
 
-  @Prop({ type: [String] })
-  unitView: string[];
-
-  @Prop({ type: [String] })
-  pictures: string[];
-
-  @Prop({ type: String, enum: UnitPurpose, required: true })
-  unitPurpose: string;
-
-  @Prop({ type: String, enum: unitType, required: true })
+  @Prop({ type: String, enum: unitType, default: unitType.BEDROOM })
   unitType: string;
-
-  @Prop({ type: String })
-  listingDate: string;
-
-  @Prop({ type: String })
-  chequeFrequency: string;
-
-  @Prop({ type: Number })
-  rentalPrice: number;
-
-  @Prop({ type: Number })
-  salePrice: number;
-
-  // unit Tenancy Detail
 
   @Prop({ type: String })
   rentedAt: string;
@@ -63,21 +40,58 @@ export class Inventory extends Document {
   @Prop({ type: String })
   rentedTill: string;
 
-  @Prop({ type: String })
-  vacantOn: string;
-
-  // Payment Detail
   @Prop({ type: Number })
-  originalPrice: number;
+  rentalPrice: number;
+
+  @Prop({ type: [String] })
+  unitView: string[];
+
+  @Prop({ type: String, enum: UnitPurpose })
+  unitPurpose: string;
 
   @Prop({ type: String })
-  paidTODevelopers: string;
+  listingDate: string;
 
-  @Prop({ type: String })
-  payableTODevelopers: string;
+  @Prop({ type: Number })
+  purchasePrice: number;
+
+  @Prop({ type: Number })
+  marketPrice: number;
+
+  @Prop({ type: Number })
+  askingPrice: number;
 
   @Prop({ type: Number })
   premiumAndLoss: number;
+
+  @Prop({ type: Number })
+  marketRent: number;
+
+  @Prop({ type: Number })
+  askingRent: number;
+
+  @Prop({ type: [String] })
+  pictures: string[];
+
+  @Prop({ type: Number })
+  paidTODevelopers: number;
+
+  @Prop({ type: Number })
+  payableTODevelopers: number;
 }
+// @Prop({ type: String })
+// chequeFrequency: string;
+
+// @Prop({ type: Number })
+// salePrice: number;
+
+// unit Tenancy Detail
+
+// @Prop({ type: String })
+// vacantOn: string;
+
+// Payment Detail
+// @Prop({ type: Number })
+// originalPrice: number;
 
 export const InventorySchema = SchemaFactory.createForClass(Inventory);

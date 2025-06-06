@@ -16,7 +16,7 @@ import {
 
 export class PlotDto {
   @IsNumber()
-  plotNumber: number;
+  plotNumber: string;
 
   @IsNumber()
   plotHeight: number;

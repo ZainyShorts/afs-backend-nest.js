@@ -139,8 +139,8 @@ export enum AmenitiesCategory {
 export enum unitType {
   STUDIO = 'Studio',
   OFFICE = 'Office',
-  SHOP = 'shop',
-  BEDROOM = 'Bedroom',
+  SHOP = 'Shop',
+  BEDROOM = 'BedRoom',
 }
 
 export enum UnitPurpose {

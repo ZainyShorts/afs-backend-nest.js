@@ -59,13 +59,17 @@ export class ProjectService {
         //   query['plot.plotNumber'] = filter.plotNumber;
         // }
 
-        // if (filter.plotStatus) {
-        //   query['plot.plotStatus'] = filter.plotStatus;
-        // }
+        if (filter.plotStatus) {
+          query['plot.plotStatus'] = filter.plotStatus;
+        }
 
         // if (filter.plotPermission?.length > 0) {
         //   query['plot.plotPermission'] = { $in: filter.plotPermission };
         // }
+        console.log(filter.plotPermission)
+        if (filter.plotPermission) {
+          query['plot.plotPermission'] = { $in: filter.plotPermission };
+        }
 
         // Other Project filters
         if (filter.propertyType) {
@@ -166,9 +170,9 @@ export class ProjectService {
           return regex.test(item.subDevelopment?.subDevelopment || '');
         });
 
-        console.log('before');
+        // console.log('before');
 
-        console.log(data);
+        // console.log(data);
 
         // Scenario 2: Further filtering by plot details within subDevelopment
         // data = data.filter((item) => {
@@ -196,7 +200,7 @@ export class ProjectService {
         // });
       }
 
-      console.log(data);
+      // console.log(data);
 
       return {
         data,

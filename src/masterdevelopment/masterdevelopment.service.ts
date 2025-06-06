@@ -86,9 +86,7 @@ export class MasterDevelopmentService {
       return await created.save();
     } catch (error) {
       if (error.response.statusCode == 400) {
-        throw new BadRequestException(
-          'Failed to create master development. Check your input.',
-        );
+        throw new BadRequestException(error?.response?.message);
       }
       // Throw Internal Server Error
       throw new InternalServerErrorException(
@@ -408,7 +406,7 @@ export class MasterDevelopmentService {
       }).exec();
     } catch (error) {
       console.error('Error updating MasterDevelopment:', error);
-      throw new BadRequestException('Failed to update MasterDevelopment.');
+      throw new BadRequestException(error.response.message);
     }
   }
 
@@ -429,8 +427,8 @@ export class MasterDevelopmentService {
         'totalAreaSqFt',
       ];
 
-      const validRows = [];
-      const invalidRows = [];
+      const validRows: any[] = [];
+      const invalidRows: any[] = [];
 
       jsonData.forEach((row: any, index: number) => {
         const formattedRow: any = {};
@@ -447,7 +445,6 @@ export class MasterDevelopmentService {
           (formattedRow.facilitiesAreaSqFt || 0) +
           (formattedRow.amentiesAreaSqFt || 0);
 
-        // Check required fields
         const missingFields = requiredFields.filter(
           (field) =>
             formattedRow[field] === undefined ||
@@ -460,16 +457,31 @@ export class MasterDevelopmentService {
             `Skipping row ${index} due to missing fields: ${missingFields.join(', ')}`,
           );
           invalidRows.push({ index, missingFields, row: formattedRow });
-          return; // skip this row
+          return;
         }
 
         validRows.push(formattedRow);
       });
 
-      // Now check duplicates among validRows as before...
+      console.log(`Total rows read: ${jsonData.length}`);
+      console.log(`Valid rows after required field check: ${validRows.length}`);
+      console.log(`Invalid rows count: ${invalidRows.length}`);
 
-      // === Fetch existing developments ===
-      const allDevelopmentNames = validRows.map((row) => row.developmentName);
+      if (validRows.length === 0) {
+        return {
+          success: true,
+          totalEntries: jsonData.length,
+          insertedEntries: 0,
+          skippedDuplicateEntries: 0,
+          skippedInvalidEntries: invalidRows.length,
+          invalidRows,
+        };
+      }
+
+      // Check duplicates in DB
+      const allDevelopmentNames = validRows.map((row) =>
+        row.developmentName.trim(),
+      );
 
       const existingDevelopments = await this.MasterDevelopmentModel.find(
         { developmentName: { $in: allDevelopmentNames } },
@@ -477,64 +489,85 @@ export class MasterDevelopmentService {
       ).lean();
 
       const existingNameSet = new Set(
-        existingDevelopments.map((r) => r.developmentName),
+        existingDevelopments.map((r) => r.developmentName.trim()),
       );
 
       let dbDuplicates = 0;
       let fileDuplicates = 0;
-      const seenDevelopmentNames = new Set();
+      const seenDevelopmentNames = new Set<string>();
 
       const filteredData = validRows.filter((row) => {
-        if (existingNameSet.has(row.developmentName)) {
+        const devName = row.developmentName.trim();
+        if (existingNameSet.has(devName)) {
           dbDuplicates++;
           return false;
         }
-        if (seenDevelopmentNames.has(row.developmentName)) {
+        if (seenDevelopmentNames.has(devName)) {
           fileDuplicates++;
           return false;
         }
-        seenDevelopmentNames.add(row.developmentName);
+        seenDevelopmentNames.add(devName);
         return true;
       });
 
+      console.log(
+        `Filtered rows after duplicate removal: ${filteredData.length}`,
+      );
+      console.log(`Duplicates skipped (DB): ${dbDuplicates}`);
+      console.log(`Duplicates skipped (file): ${fileDuplicates}`);
+
       if (filteredData.length === 0) {
-        fs.unlinkSync(filePath);
         return {
           success: true,
           totalEntries: jsonData.length,
           insertedEntries: 0,
           skippedDuplicateEntries: dbDuplicates + fileDuplicates,
           skippedInvalidEntries: invalidRows.length,
+          invalidRows,
         };
       }
 
-      // Deduplicate in-memory (optional)
-      const uniqueRecords = new Map();
-      filteredData.forEach((dto) => {
-        if (this.validateEntry(dto)) {
-          uniqueRecords.set(dto.developmentName, dto);
+      // Validate entries
+      const validatedRecords = filteredData.filter((dto) => {
+        const isValid = this.validateEntry(dto);
+        if (!isValid) {
+          console.log(`Record failed validation: ${dto.developmentName}`);
         }
+        return isValid;
       });
 
-      const bulkInsertData = Array.from(uniqueRecords.values());
+      console.log(
+        `Records after validateEntry check: ${validatedRecords.length}`,
+      );
+
+      if (validatedRecords.length === 0) {
+        return {
+          success: true,
+          totalEntries: jsonData.length,
+          insertedEntries: 0,
+          skippedDuplicateEntries: dbDuplicates + fileDuplicates,
+          skippedInvalidEntries: invalidRows.length + filteredData.length, // count filtered but invalid as invalid
+          invalidRows,
+        };
+      }
 
       const chunkSize = 5000;
       let insertedDataCount = 0;
 
-      for (let i = 0; i < bulkInsertData.length; i += chunkSize) {
-        const chunk = bulkInsertData.slice(i, i + chunkSize);
-        if (chunk.length === 0) continue;
+      for (let i = 0; i < validatedRecords.length; i += chunkSize) {
+        const chunk = validatedRecords.slice(i, i + chunkSize);
         try {
-          await this.MasterDevelopmentModel.insertMany(chunk, {
+          const result = await this.MasterDevelopmentModel.insertMany(chunk, {
             ordered: false,
           });
-          insertedDataCount += chunk.length;
+          insertedDataCount += result.length;
+          console.log(
+            `Inserted chunk of ${result.length} records (index ${i} to ${i + chunk.length - 1})`,
+          );
         } catch (error) {
           console.error(`Error inserting chunk starting at index ${i}:`, error);
         }
       }
-
-      fs.unlinkSync(filePath);
 
       return {
         success: true,
@@ -542,20 +575,24 @@ export class MasterDevelopmentService {
         insertedEntries: insertedDataCount,
         skippedDuplicateEntries: dbDuplicates + fileDuplicates,
         skippedInvalidEntries: invalidRows.length,
-        invalidRows, // optionally return details for logging or review
+        invalidRows,
       };
-    } catch (error) {
-      if (error.response?.statusCode === 400) {
+    } catch (error: any) {
+      if (error instanceof SyntaxError || error.message.includes('Invalid')) {
         throw new BadRequestException(
           'File format is not correct. Missing or empty fields.',
         );
       }
       throw new InternalServerErrorException(
-        error?.response?.message || 'Internal server error occurred.',
+        error?.message || 'Internal server error occurred.',
       );
     } finally {
       if (fs.existsSync(filePath)) {
-        fs.unlinkSync(filePath);
+        try {
+          fs.unlinkSync(filePath);
+        } catch (unlinkErr) {
+          console.error('Error deleting file:', unlinkErr);
+        }
       }
     }
   }

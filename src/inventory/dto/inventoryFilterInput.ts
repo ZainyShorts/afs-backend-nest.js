@@ -1,52 +1,74 @@
 export class InventoryFilterInput {
-  projectID?: string;
-  developmentName?: string;
-  subDevelopment?: string;
-  project?: string;
+  project?: string; // Mongoose field is `project`, not `projectID`
   unitNumber?: string;
   unitHeight?: string;
   unitInternalDesign?: string;
   unitExternalDesign?: string;
   unitView?: string[];
   pictures?: string[];
-  unitPurpose?: string;
-  unitType?: string;
+  unitPurpose?: string; // Should be validated using UnitPurpose enum in actual logic
+  unitType?: string; // Should be validated using unitType enum
   listingDate?: string;
-  chequeFrequency?: string;
+  developmentName?: string;
   roadLocation?: string;
+  subDevelopment?: string;
+
   noOfBedRooms?: {
     min?: number;
     max?: number;
   };
+
   plotSizeSqFt?: {
     min?: number;
     max?: number;
   };
+
   BuaSqFt?: {
     min?: number;
     max?: number;
   };
+
   rentalPriceRange?: {
     min?: number;
     max?: number;
   };
-  salePriceRange?: {
+
+  purchasePriceRange?: {
     min?: number;
     max?: number;
   };
-  originalPriceRange?: {
+
+  marketPriceRange?: {
     min?: number;
     max?: number;
   };
-  startDate?: string;
-  endDate?: string;
-  rentedAt?: string;
-  rentedTill?: string;
-  vacantOn?: string;
-  paidTODevelopers?: string;
-  payableTODevelopers?: string;
+
+  askingPriceRange?: {
+    min?: number;
+    max?: number;
+  };
+
+  marketRentRange?: {
+    min?: number;
+    max?: number;
+  };
+
+  askingRentRange?: {
+    min?: number;
+    max?: number;
+  };
+
   premiumAndLossRange?: {
     min?: number;
     max?: number;
   };
+
+  rentedAt?: string;
+  rentedTill?: string;
+
+  paidTODevelopers?: number;
+  payableTODevelopers?: number;
+
+  startDate?: string; // Can be used to filter by createdAt range
+  endDate?: string;
 }

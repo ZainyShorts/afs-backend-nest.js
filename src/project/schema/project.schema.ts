@@ -14,7 +14,7 @@ export type ProjectDocument = Project & Document;
 
 export class Plot {
   @Prop()
-  plotNumber: number;
+  plotNumber: string;
 
   @Prop()
   plotHeight: number;

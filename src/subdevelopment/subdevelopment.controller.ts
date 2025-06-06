@@ -44,6 +44,7 @@ export class SubDevelopmentController {
     @Query('populate') populate?: string,
     @Query('fields') fields?: string,
   ) {
+    console.log(filter);
     return this.service.findAll(
       +page,
       +limit,

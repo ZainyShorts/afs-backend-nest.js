@@ -124,10 +124,6 @@ export class InventoryService {
           query.rentedAt = filter.rentedAt;
         }
 
-        if (filter.projectID) {
-          query.project = filter.projectID;
-        }
-
         if (filter.rentedAt) {
           query.rentedAt = filter.rentedAt;
         }
@@ -164,28 +160,28 @@ export class InventoryService {
             query.rentalPrice.$lte = filter.rentalPriceRange.max;
         }
 
-        if (filter.rentalPriceRange) {
+        if (filter.purchasePriceRange) {
           query.rentalPrice = {};
-          if (filter.rentalPriceRange.min !== undefined)
-            query.rentalPrice.$gte = filter.rentalPriceRange.min;
-          if (filter.rentalPriceRange.max !== undefined)
-            query.rentalPrice.$lte = filter.rentalPriceRange.max;
+          if (filter.purchasePriceRange.min !== undefined)
+            query.purchasePrice.$gte = filter.purchasePriceRange.min;
+          if (filter.purchasePriceRange.max !== undefined)
+            query.purchasePrice.$lte = filter.purchasePriceRange.max;
         }
 
-        if (filter.salePriceRange) {
-          query.salePrice = {};
-          if (filter.salePriceRange.min !== undefined)
-            query.salePrice.$gte = filter.salePriceRange.min;
-          if (filter.salePriceRange.max !== undefined)
-            query.salePrice.$lte = filter.salePriceRange.max;
+        if (filter.askingPriceRange) {
+          query.askingPrice = {};
+          if (filter.askingPriceRange.min !== undefined)
+            query.askingPrice.$gte = filter.askingPriceRange.min;
+          if (filter.askingPriceRange.max !== undefined)
+            query.askingPrice.$lte = filter.askingPriceRange.max;
         }
 
-        if (filter.originalPriceRange) {
-          query.originalPrice = {};
-          if (filter.originalPriceRange.min !== undefined)
-            query.originalPrice.$gte = filter.originalPriceRange.min;
-          if (filter.originalPriceRange.max !== undefined)
-            query.originalPrice.$lte = filter.originalPriceRange.max;
+        if (filter.marketPriceRange) {
+          query.marketPrice = {};
+          if (filter.marketPriceRange.min !== undefined)
+            query.marketPrice.$gte = filter.marketPriceRange.min;
+          if (filter.marketPriceRange.max !== undefined)
+            query.marketPrice.$lte = filter.marketPriceRange.max;
         }
 
         if (filter.premiumAndLossRange) {
@@ -194,6 +190,22 @@ export class InventoryService {
             query.premiumAndLoss.$gte = filter.premiumAndLossRange.min;
           if (filter.premiumAndLossRange.max !== undefined)
             query.premiumAndLoss.$lte = filter.premiumAndLossRange.max;
+        }
+
+        if (filter.marketRentRange) {
+          query.premiumAndLoss = {};
+          if (filter.marketRentRange.min !== undefined)
+            query.marketRent.$gte = filter.marketRentRange.min;
+          if (filter.marketRentRange.max !== undefined)
+            query.marketRent.$lte = filter.marketRentRange.max;
+        }
+
+        if (filter.askingRentRange) {
+          query.premiumAndLoss = {};
+          if (filter.askingRentRange.min !== undefined)
+            query.askingRent.$gte = filter.askingRentRange.min;
+          if (filter.askingRentRange.max !== undefined)
+            query.askingRent.$lte = filter.askingRentRange.max;
         }
 
         if (filter.startDate || filter.endDate) {
@@ -485,6 +497,8 @@ export class InventoryService {
         });
         return newRow;
       });
+
+      console.log(formattedSheetData);
 
       // return formattedSheetData;
       console.log(`Rows extracted from Excel: ${formattedSheetData.length}`);
