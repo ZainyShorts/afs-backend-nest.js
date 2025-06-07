@@ -6,7 +6,11 @@ import {
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Project, ProjectDocument } from './schema/project.schema';
-import { Model } from 'mongoose';
+import {
+  Inventory,
+  InventoryDocument,
+} from '../inventory/schema/inventory.schema';
+import { Model, Types } from 'mongoose';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
 import { ProjectFilterInput } from './dto/project-filter.input';
@@ -15,6 +19,8 @@ import { ProjectFilterInput } from './dto/project-filter.input';
 export class ProjectService {
   constructor(
     @InjectModel(Project.name) private projectModel: Model<ProjectDocument>,
+    @InjectModel(Inventory.name)
+    private inventoryModel: Model<InventoryDocument>,
   ) {}
 
   async create(createProjectDto: CreateProjectDto): Promise<Project> {
@@ -66,7 +72,7 @@ export class ProjectService {
         // if (filter.plotPermission?.length > 0) {
         //   query['plot.plotPermission'] = { $in: filter.plotPermission };
         // }
-        console.log(filter.plotPermission)
+        console.log(filter.plotPermission);
         if (filter.plotPermission) {
           query['plot.plotPermission'] = { $in: filter.plotPermission };
         }
@@ -293,6 +299,285 @@ export class ProjectService {
       throw new InternalServerErrorException(
         error.message || 'Failed to update project',
       );
+    }
+  }
+
+  // auto-save off
+  async getInventorySummary(projectId: string) {
+    const inventoryStats = await this.inventoryModel.aggregate([
+      {
+        $match: {
+          project: new Types.ObjectId(projectId),
+        },
+      },
+      {
+        $group: {
+          _id: {
+            unitType: '$unitType',
+            noOfBedRooms: '$noOfBedRooms',
+          },
+          count: { $sum: 1 },
+        },
+      },
+    ]);
+
+    const inventory = {
+      Shop: 0,
+      Offices: 0,
+      Studios: 0,
+      '1 BR': 0,
+      '2 BR': 0,
+      '3 BR': 0,
+      '4 BR': 0,
+      '5 BR': 0,
+      '6 BR': 0,
+      '7 BR': 0,
+      '8 BR': 0,
+    };
+
+    for (const item of inventoryStats) {
+      const { unitType, noOfBedRooms } = item._id;
+      const count = item.count;
+
+      if (unitType === 'Shop') inventory.Shop += count;
+      else if (unitType === 'Offices') inventory.Offices += count;
+      else if (unitType === 'Studios' || noOfBedRooms === 0)
+        inventory.Studios += count;
+      else if (noOfBedRooms >= 1 && noOfBedRooms <= 8) {
+        inventory[`${noOfBedRooms} BR`] += count;
+      }
+    }
+
+    return inventory;
+  }
+  async getCombinedRentAndSellInventorySummary(projectId: string) {
+    const unitPurposes = ['Rent', 'Sell'];
+
+    const inventoryStats = await this.inventoryModel.aggregate([
+      {
+        $match: {
+          project: new Types.ObjectId(projectId),
+          unitPurpose: { $in: unitPurposes },
+        },
+      },
+      {
+        $group: {
+          _id: {
+            unitType: '$unitType',
+            noOfBedRooms: '$noOfBedRooms',
+          },
+          count: { $sum: 1 },
+        },
+      },
+    ]);
+
+    const unitLabels = [
+      'Shop',
+      'Offices',
+      'Studios',
+      '1 BR',
+      '2 BR',
+      '3 BR',
+      '4 BR',
+      '5 BR',
+      '6 BR',
+      '7 BR',
+      '8 BR',
+    ];
+
+    const combinedSummary: Record<string, number> = Object.fromEntries(
+      unitLabels.map((label) => [label, 0]),
+    );
+
+    for (const item of inventoryStats) {
+      const { unitType, noOfBedRooms } = item._id;
+      const count = item.count;
+
+      if (unitType === 'Shop') combinedSummary['Shop'] += count;
+      else if (unitType === 'Offices') combinedSummary['Offices'] += count;
+      else if (unitType === 'Studios' || noOfBedRooms === 0)
+        combinedSummary['Studios'] += count;
+      else if (noOfBedRooms >= 1 && noOfBedRooms <= 8) {
+        combinedSummary[`${noOfBedRooms} BR`] += count;
+      }
+    }
+
+    return combinedSummary;
+  }
+
+  async getPriceStatsIncludingAllPurposes(projectId: string) {
+    const stats = await this.inventoryModel.aggregate([
+      {
+        $match: {
+          project: new Types.ObjectId(projectId),
+        },
+      },
+      {
+        $project: {
+          unitType: 1,
+          noOfBedRooms: 1,
+          marketPrice: 1,
+          askingPrice: 1,
+          premiumLoss: { $subtract: ['$askingPrice', '$marketPrice'] },
+        },
+      },
+      {
+        $group: {
+          _id: {
+            unitType: '$unitType',
+            noOfBedRooms: '$noOfBedRooms',
+          },
+          marketPriceMin: { $min: '$marketPrice' },
+          marketPriceMax: { $max: '$marketPrice' },
+          askingPriceMin: { $min: '$askingPrice' },
+          askingPriceMax: { $max: '$askingPrice' },
+          premiumMin: { $min: '$premiumLoss' },
+          premiumMax: { $max: '$premiumLoss' },
+        },
+      },
+    ]);
+
+    // Define fixed unit type labels
+    const unitLabels = [
+      'Studio',
+      '1 BR',
+      '2 BR',
+      '3 BR',
+      '4 BR',
+      '5 BR',
+      '6 BR',
+      '7 BR',
+      '8 BR',
+    ];
+
+    // Initialize with 0s
+    const result = Object.fromEntries(
+      unitLabels.map((label) => [
+        label,
+        {
+          marketPrice: { min: 0, max: 0 },
+          askingPrice: { min: 0, max: 0 },
+          premium: { min: 0, max: 0 },
+        },
+      ]),
+    );
+
+    // Fill values from aggregation
+    for (const item of stats) {
+      const { unitType, noOfBedRooms } = item._id;
+      let label = '';
+
+      if (unitType === 'Studios' || noOfBedRooms === 0) label = 'Studio';
+      else if (noOfBedRooms >= 1 && noOfBedRooms <= 8)
+        label = `${noOfBedRooms} BR`;
+
+      if (result[label]) {
+        result[label] = {
+          marketPrice: { min: item.marketPriceMin, max: item.marketPriceMax },
+          askingPrice: { min: item.askingPriceMin, max: item.askingPriceMax },
+          premium: { min: item.premiumMin, max: item.premiumMax },
+        };
+      }
+    }
+
+    return result;
+  }
+
+  async report(id: string): Promise<any> {
+    try {
+      // console.log((id = '6814dc2df2829e48c3df4ee0'));
+      const projectDoc = await this.projectModel
+        .findOne({ _id: id }) // Use _id, not __id
+        .populate('masterDevelopment') // Populate masterDevelopment
+        .populate('subDevelopment') // Populate subDevelopment
+        .exec();
+
+      console.log(projectDoc);
+
+      if (projectDoc?.plot) {
+        return {
+          success: true,
+          masterDevelopment: projectDoc.masterDevelopment.developmentName,
+          subDevelopment: 'N/A',
+          project: projectDoc.projectName,
+          projectQuality: projectDoc.projectQuality,
+          constructionStatus: projectDoc.constructionStatus,
+          salesStatus: projectDoc.salesStatus,
+          plotPermission: projectDoc.plot.plotPermission,
+          plotHeight: projectDoc.plot.plotHeight,
+          plotSizeSqFt: projectDoc.plot.plotSizeSqFt,
+          plotBUASqFt: projectDoc.plot.plotBUASqFt,
+          launchDate: projectDoc.launchDate,
+          completionDate: projectDoc.completionDate,
+          downPayment: projectDoc.downPayment,
+          installmentDate: projectDoc.installmentDate,
+          uponCompletion: projectDoc.uponCompletion,
+          postHandOver: projectDoc.postHandOver,
+          facilityCategories: projectDoc.facilityCategories,
+          amenitiesCategories: projectDoc.amenitiesCategories,
+          inventory: await this.getInventorySummary(id),
+          availability: await this.getCombinedRentAndSellInventorySummary(id),
+          priceRange: await this.getPriceStatsIncludingAllPurposes(id),
+        };
+      } else if (
+        projectDoc?.plot == null &&
+        projectDoc?.subDevelopment == null
+      ) {
+        return {
+          success: true,
+          masterDevelopment: projectDoc.masterDevelopment.developmentName,
+          subDevelopment: 'N/A',
+          project: projectDoc.projectName,
+          projectQuality: projectDoc.projectQuality,
+          constructionStatus: projectDoc.constructionStatus,
+          salesStatus: projectDoc.salesStatus,
+          plotPermission: null,
+          plotHeight: null,
+          plotSizeSqFt: null,
+          plotBUASqFt: null,
+          launchDate: projectDoc.launchDate,
+          completionDate: projectDoc.completionDate,
+          downPayment: projectDoc.downPayment,
+          installmentDate: projectDoc.installmentDate,
+          uponCompletion: projectDoc.uponCompletion,
+          postHandOver: projectDoc.postHandOver,
+          facilityCategories: projectDoc.facilityCategories,
+          amenitiesCategories: projectDoc.amenitiesCategories,
+          inventory: await this.getInventorySummary(id),
+          availability: await this.getCombinedRentAndSellInventorySummary(id),
+          priceRange: await this.getPriceStatsIncludingAllPurposes(id),
+        };
+      } else if (projectDoc?.subDevelopment) {
+        return {
+          success: true,
+          masterDevelopment: projectDoc.masterDevelopment.developmentName,
+          subDevelopment: projectDoc.subDevelopment.subDevelopment,
+          project: projectDoc.projectName,
+          projectQuality: projectDoc.projectQuality,
+          constructionStatus: projectDoc.constructionStatus,
+          salesStatus: projectDoc.salesStatus,
+          plotPermission: projectDoc.subDevelopment.plotPermission,
+          plotHeight: projectDoc.subDevelopment.plotHeight,
+          plotSizeSqFt: projectDoc.subDevelopment.plotSizeSqFt,
+          plotBUASqFt: projectDoc.subDevelopment.plotBUASqFt,
+          launchDate: projectDoc.launchDate,
+          completionDate: projectDoc.completionDate,
+          downPayment: projectDoc.downPayment,
+          installmentDate: projectDoc.installmentDate,
+          uponCompletion: projectDoc.uponCompletion,
+          postHandOver: projectDoc.postHandOver,
+          facilityCategories: projectDoc.facilityCategories,
+          amenitiesCategories: projectDoc.amenitiesCategories,
+          inventory: await this.getInventorySummary(id),
+          availability: await this.getCombinedRentAndSellInventorySummary(id),
+          priceRange: await this.getPriceStatsIncludingAllPurposes(id),
+        };
+      }
+    } catch (e: any) {
+      console.log(e);
+      return {
+        success: false,
+      };
     }
   }
 }

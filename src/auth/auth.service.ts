@@ -145,7 +145,8 @@ export class AuthService {
 
       if (user.lastOtp === otp) {
         const payload = {
-          useremail: user.email,
+          userName: user.name,
+          userEmail: user.email,
           userId: user._id,
           role: user.role,
         };

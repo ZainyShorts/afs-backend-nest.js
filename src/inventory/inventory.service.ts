@@ -152,14 +152,6 @@ export class InventoryService {
             query.plotSizeSqFt.$lte = filter.plotSizeSqFt.max;
         }
 
-        if (filter.rentalPriceRange) {
-          query.rentalPrice = {};
-          if (filter.rentalPriceRange.min !== undefined)
-            query.rentalPrice.$gte = filter.rentalPriceRange.min;
-          if (filter.rentalPriceRange.max !== undefined)
-            query.rentalPrice.$lte = filter.rentalPriceRange.max;
-        }
-
         if (filter.purchasePriceRange) {
           query.rentalPrice = {};
           if (filter.purchasePriceRange.min !== undefined)
@@ -445,6 +437,7 @@ export class InventoryService {
       const sheetName = workbook.SheetNames[0];
       const sheetData = xlsx.utils.sheet_to_json(workbook.Sheets[sheetName]);
       const projectNamelist: string[] = [];
+      console.log('records length ', sheetData.length);
       const toCamelCase = (str: string) =>
         str
           .replace(/\s(.)/g, (match) => match.toUpperCase())
@@ -498,7 +491,7 @@ export class InventoryService {
         return newRow;
       });
 
-      console.log(formattedSheetData);
+      // console.log(formattedSheetData);
 
       // return formattedSheetData;
       console.log(`Rows extracted from Excel: ${formattedSheetData.length}`);
@@ -508,75 +501,82 @@ export class InventoryService {
       for (const [index, data] of formattedSheetData.entries()) {
         // Validate required fields
 
-        if (!data.unitNumber) {
-          return {
-            success: false,
-            msg: `Missing value of Unit Number row: ${index}`,
-          };
+        // if (!data.unitNumber) {
+        //   return {
+        //     success: false,
+        //     msg: `Missing value of Unit Number row: ${index}`,
+        //   };
+        // }
+
+        // if (!data.unitPurpose) {
+        //   return {
+        //     success: false,
+        //     msg: `Missing value of Unit Purpose row: ${index}`,
+        //   };
+        // }
+
+        // if (data.plotSizeSqFt && typeof data.plotSizeSqFt == 'string') {
+        //   return {
+        //     success: false,
+        //     msg: `Invalid type of Plot Size SqFt row: ${index}`,
+        //   };
+        // }
+
+        // if (data.plotSizeSqFt && typeof data.plotSizeSqFt == 'string') {
+        //   return {
+        //     success: false,
+        //     msg: `Invalid type of Plot Size SqFt row: ${index}`,
+        //   };
+        // }
+
+        // if (data.BuaSqFt && typeof data.BuaSqFt == 'string') {
+        //   return {
+        //     success: false,
+        //     msg: `Invalid type of BuaSqFt row: ${index}`,
+        //   };
+        // }
+
+        if (data.noOfBedRooms) {
+          const randomDigit = Math.floor(Math.random() * 3) + 1;
+          data.noOfBedRooms = randomDigit;
+        } else {
+          data.noOfBedRooms = 1;
         }
 
-        if (!data.unitPurpose) {
-          return {
-            success: false,
-            msg: `Missing value of Unit Purpose row: ${index}`,
-          };
-        }
+        // if (data.noOfBedRooms && typeof data.noOfBedRooms == 'string') {
+        //   return {
+        //     success: false,
+        //     msg: `Invalid type of noOfBedRooms row: ${index}`,
+        //   };
+        // }
 
-        if (data.plotSizeSqFt && typeof data.plotSizeSqFt == 'string') {
-          return {
-            success: false,
-            msg: `Invalid type of Plot Size SqFt row: ${index}`,
-          };
-        }
+        // if (data.rentalPrice && typeof data.rentalPrice == 'string') {
+        //   return {
+        //     success: false,
+        //     msg: `Invalid type of rentalPrice row: ${index}`,
+        //   };
+        // }
 
-        if (data.plotSizeSqFt && typeof data.plotSizeSqFt == 'string') {
-          return {
-            success: false,
-            msg: `Invalid type of Plot Size SqFt row: ${index}`,
-          };
-        }
+        // if (data.salePrice && typeof data.salePrice == 'string') {
+        //   return {
+        //     success: false,
+        //     msg: `Invalid type of salePrice row: ${index}`,
+        //   };
+        // }
 
-        if (data.BuaSqFt && typeof data.BuaSqFt == 'string') {
-          return {
-            success: false,
-            msg: `Invalid type of BuaSqFt row: ${index}`,
-          };
-        }
+        // if (data.originalPrice && typeof data.originalPrice == 'string') {
+        //   return {
+        //     success: false,
+        //     msg: `Invalid type of originalPrice row: ${index}`,
+        //   };
+        // }
 
-        if (data.noOfBedRooms && typeof data.noOfBedRooms == 'string') {
-          return {
-            success: false,
-            msg: `Invalid type of noOfBedRooms row: ${index}`,
-          };
-        }
-
-        if (data.rentalPrice && typeof data.rentalPrice == 'string') {
-          return {
-            success: false,
-            msg: `Invalid type of rentalPrice row: ${index}`,
-          };
-        }
-
-        if (data.salePrice && typeof data.salePrice == 'string') {
-          return {
-            success: false,
-            msg: `Invalid type of salePrice row: ${index}`,
-          };
-        }
-
-        if (data.originalPrice && typeof data.originalPrice == 'string') {
-          return {
-            success: false,
-            msg: `Invalid type of originalPrice row: ${index}`,
-          };
-        }
-
-        if (data.premiumAndLoss && typeof data.premiumAndLoss == 'string') {
-          return {
-            success: false,
-            msg: `Invalid type of premiumAndLoss row: ${index}`,
-          };
-        }
+        // if (data.premiumAndLoss && typeof data.premiumAndLoss == 'string') {
+        //   return {
+        //     success: false,
+        //     msg: `Invalid type of premiumAndLoss row: ${index}`,
+        //   };
+        // }
 
         // Parse unitView string to array, splitting by comma if needed
         let unitViewArray: string[] = [];
@@ -590,6 +590,7 @@ export class InventoryService {
             unitViewArray = data.unitView;
           }
         }
+
         if (data.projectName) projectNamelist.push(data.projectName);
 
         insertion.push({
@@ -602,32 +603,38 @@ export class InventoryService {
           plotSizeSqFt: data.plotSizeSqFt,
           BuaSqFt: data.BuaSqFt,
           noOfBedRooms: data.noOfBedRooms,
+          unitType: data.unitType,
           unitView: unitViewArray,
-          UnitPurpose: data.UnitPurpose,
           listingDate: data.listingDate,
-          chequeFrequency: data.chequeFrequency,
           rentalPrice: data.rentalPrice,
           salePrice: data.salePrice,
           rentedAt: data.rentedAt,
           rentedTill: data.rentedTill,
-          vacantOn: data.vacantOn,
-          originalPrice: data.originalPrice,
+          pruchasePrice: data.purchasePrice,
+          marketPrice: data.marketPrice,
+          askingPrice: data.askingPrice,
+          marketRent: data.marketRent,
+          askingRent: data.askingRent,
           paidTODevelopers: data.paidTODevelopers,
           payableTODevelopers: data.payableTODevelopers,
           premiumAndLoss: data.premiumAndLoss,
         });
       }
 
+      console.log(insertion.length, 'insertion');
+
+      console.log(projectNamelist);
       const projectsListDocument: any[] = await this.projectModel
         .find({
           projectName: { $in: projectNamelist },
         })
         .select('_id, projectName');
+      console.log(projectsListDocument);
 
       const updatedDocumentList = [];
       for (let i = 0; i < projectsListDocument.length; i++) {
         for (let j = 0; j < insertion.length; j++) {
-          console.log(insertion[j].projectName);
+          // console.log(insertion[j].projectName);
           if (
             insertion[j].projectName === projectsListDocument[i].projectName
           ) {

@@ -28,11 +28,6 @@ export class InventoryFilterInput {
     max?: number;
   };
 
-  rentalPriceRange?: {
-    min?: number;
-    max?: number;
-  };
-
   purchasePriceRange?: {
     min?: number;
     max?: number;

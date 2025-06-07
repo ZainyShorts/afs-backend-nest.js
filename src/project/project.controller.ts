@@ -75,4 +75,10 @@ export class ProjectController {
       );
     }
   }
+
+  @Get('report/:id')
+  async report(@Param('id') id: string): Promise<any> {
+    console.log(id);
+    return await this.projectService.report(id);
+  }
 }

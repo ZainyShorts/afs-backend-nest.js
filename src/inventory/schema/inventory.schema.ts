@@ -1,16 +1,20 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
 import { Project } from 'src/project/schema/project.schema';
+// import { User } from 'src/user/schema/user.schema';
 import { UnitPurpose, unitType } from 'utils/enum/enums';
 
 @Schema({
   timestamps: true,
 })
 export class Inventory extends Document {
+  // @Prop({ type: Types.ObjectId, ref: 'User', required: true })
+  // user: User;
+
   @Prop({ type: Types.ObjectId, ref: 'Project', required: true })
   project: Project;
 
-  @Prop({ type: String, required: true })
+  @Prop({ type: String })
   unitNumber: string;
 
   @Prop({ type: String })
@@ -31,7 +35,7 @@ export class Inventory extends Document {
   @Prop({ type: Number })
   noOfBedRooms: number;
 
-  @Prop({ type: String, enum: unitType, default: unitType.BEDROOM })
+  @Prop({ type: String, enum: unitType })
   unitType: string;
 
   @Prop({ type: String })
@@ -39,9 +43,6 @@ export class Inventory extends Document {
 
   @Prop({ type: String })
   rentedTill: string;
-
-  @Prop({ type: Number })
-  rentalPrice: number;
 
   @Prop({ type: [String] })
   unitView: string[];
@@ -93,5 +94,7 @@ export class Inventory extends Document {
 // Payment Detail
 // @Prop({ type: Number })
 // originalPrice: number;
+
+export type InventoryDocument = Inventory & Document;
 
 export const InventorySchema = SchemaFactory.createForClass(Inventory);

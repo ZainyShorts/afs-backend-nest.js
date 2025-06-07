@@ -62,11 +62,6 @@ export class CreateInventorytDto {
   @IsString()
   rentedTill?: string;
 
-  @Field(() => Number, { nullable: true })
-  @IsOptional()
-  @IsNumber()
-  rentalPrice?: number;
-
   @Field(() => [String], { nullable: true })
   @IsOptional()
   @IsArray()

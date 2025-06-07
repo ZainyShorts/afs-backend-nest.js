@@ -53,10 +53,6 @@ export class UpdateInventoryDto {
   rentedTill?: string;
 
   @IsOptional()
-  @IsNumber()
-  rentalPrice?: number;
-
-  @IsOptional()
   @IsArray()
   @IsString({ each: true })
   unitView?: string[];
