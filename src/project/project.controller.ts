@@ -10,6 +10,7 @@ import {
   ConflictException,
   InternalServerErrorException,
   Patch,
+  Delete,
 } from '@nestjs/common';
 import { ProjectService } from './project.service';
 import { CreateProjectDto } from './dto/create-project.dto';
@@ -80,5 +81,10 @@ export class ProjectController {
   async report(@Param('id') id: string): Promise<any> {
     console.log(id);
     return await this.projectService.report(id);
+  }
+
+  @Delete(':id')
+  delete(@Param('id') id: string) {
+    return this.projectService.delete(id);
   }
 }

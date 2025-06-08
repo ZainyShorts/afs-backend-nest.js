@@ -4,13 +4,13 @@ import {
   InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
+import { InjectConnection, InjectModel } from '@nestjs/mongoose';
 import { Project, ProjectDocument } from './schema/project.schema';
 import {
   Inventory,
   InventoryDocument,
 } from '../inventory/schema/inventory.schema';
-import { Model, Types } from 'mongoose';
+import { Connection, Model } from 'mongoose';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
 import { ProjectFilterInput } from './dto/project-filter.input';
@@ -21,6 +21,7 @@ export class ProjectService {
     @InjectModel(Project.name) private projectModel: Model<ProjectDocument>,
     @InjectModel(Inventory.name)
     private inventoryModel: Model<InventoryDocument>,
+    @InjectConnection() private readonly connection: Connection,
   ) {}
 
   async create(createProjectDto: CreateProjectDto): Promise<Project> {
@@ -307,7 +308,31 @@ export class ProjectService {
     const inventoryStats = await this.inventoryModel.aggregate([
       {
         $match: {
-          project: new Types.ObjectId(projectId),
+          project: projectId, // Fixed: match string
+        },
+      },
+      {
+        $project: {
+          unitType: {
+            $switch: {
+              branches: [
+                { case: { $eq: ['$unitType', 'BedRoom'] }, then: 'BR' },
+                { case: { $eq: ['$unitType', 'Bedroom'] }, then: 'BR' },
+                { case: { $eq: ['$unitType', 'Studio'] }, then: 'Studios' },
+                { case: { $eq: ['$unitType', 'Offices'] }, then: 'Offices' },
+                { case: { $eq: ['$unitType', 'Office'] }, then: 'Offices' },
+                { case: { $eq: ['$unitType', 'Shop'] }, then: 'Shop' },
+              ],
+              default: 'Unknown',
+            },
+          },
+          noOfBedRooms: {
+            $cond: {
+              if: { $isNumber: '$noOfBedRooms' },
+              then: '$noOfBedRooms',
+              else: null,
+            },
+          },
         },
       },
       {
@@ -320,6 +345,8 @@ export class ProjectService {
         },
       },
     ]);
+
+    console.log('Aggregation output:', inventoryStats);
 
     const inventory = {
       Shop: 0,
@@ -339,25 +366,106 @@ export class ProjectService {
       const { unitType, noOfBedRooms } = item._id;
       const count = item.count;
 
-      if (unitType === 'Shop') inventory.Shop += count;
-      else if (unitType === 'Offices') inventory.Offices += count;
-      else if (unitType === 'Studios' || noOfBedRooms === 0)
+      if (unitType === 'Shop') {
+        inventory.Shop += count;
+      } else if (unitType === 'Offices') {
+        inventory.Offices += count;
+      } else if (unitType === 'Studios') {
         inventory.Studios += count;
-      else if (noOfBedRooms >= 1 && noOfBedRooms <= 8) {
+      } else if (unitType === 'BR' && noOfBedRooms >= 1 && noOfBedRooms <= 8) {
         inventory[`${noOfBedRooms} BR`] += count;
       }
     }
 
     return inventory;
   }
+
+  // async getCombinedRentAndSellInventorySummary(projectId: string) {
+  //   const unitPurposes = ['Rent', 'Sell'];
+
+  //   const inventoryStats = await this.inventoryModel.aggregate([
+  //     {
+  //       $match: {
+  //         project: new Types.ObjectId(projectId),
+  //         unitPurpose: { $in: unitPurposes },
+  //       },
+  //     },
+  //     {
+  //       $group: {
+  //         _id: {
+  //           unitType: '$unitType',
+  //           noOfBedRooms: '$noOfBedRooms',
+  //         },
+  //         count: { $sum: 1 },
+  //       },
+  //     },
+  //   ]);
+
+  //   const unitLabels = [
+  //     'Shop',
+  //     'Offices',
+  //     'Studios',
+  //     '1 BR',
+  //     '2 BR',
+  //     '3 BR',
+  //     '4 BR',
+  //     '5 BR',
+  //     '6 BR',
+  //     '7 BR',
+  //     '8 BR',
+  //   ];
+
+  //   const combinedSummary: Record<string, number> = Object.fromEntries(
+  //     unitLabels.map((label) => [label, 0]),
+  //   );
+
+  //   for (const item of inventoryStats) {
+  //     const { unitType, noOfBedRooms } = item._id;
+  //     const count = item.count;
+
+  //     if (unitType === 'Shop') combinedSummary['Shop'] += count;
+  //     else if (unitType === 'Offices') combinedSummary['Offices'] += count;
+  //     else if (unitType === 'Studios' || noOfBedRooms === 0)
+  //       combinedSummary['Studios'] += count;
+  //     else if (noOfBedRooms >= 1 && noOfBedRooms <= 8) {
+  //       combinedSummary[`${noOfBedRooms} BR`] += count;
+  //     }
+  //   }
+
+  //   return combinedSummary;
+  // }
   async getCombinedRentAndSellInventorySummary(projectId: string) {
     const unitPurposes = ['Rent', 'Sell'];
 
     const inventoryStats = await this.inventoryModel.aggregate([
       {
         $match: {
-          project: new Types.ObjectId(projectId),
+          project: projectId, // FIXED: Match string not ObjectId
           unitPurpose: { $in: unitPurposes },
+        },
+      },
+      {
+        $project: {
+          unitType: {
+            $switch: {
+              branches: [
+                { case: { $eq: ['$unitType', 'BedRoom'] }, then: 'BR' },
+                { case: { $eq: ['$unitType', 'Bedroom'] }, then: 'BR' },
+                { case: { $eq: ['$unitType', 'Studio'] }, then: 'Studios' },
+                { case: { $eq: ['$unitType', 'Offices'] }, then: 'Offices' },
+                { case: { $eq: ['$unitType', 'Office'] }, then: 'Offices' },
+                { case: { $eq: ['$unitType', 'Shop'] }, then: 'Shop' },
+              ],
+              default: 'Unknown',
+            },
+          },
+          noOfBedRooms: {
+            $cond: {
+              if: { $isNumber: '$noOfBedRooms' },
+              then: '$noOfBedRooms',
+              else: null,
+            },
+          },
         },
       },
       {
@@ -393,11 +501,13 @@ export class ProjectService {
       const { unitType, noOfBedRooms } = item._id;
       const count = item.count;
 
-      if (unitType === 'Shop') combinedSummary['Shop'] += count;
-      else if (unitType === 'Offices') combinedSummary['Offices'] += count;
-      else if (unitType === 'Studios' || noOfBedRooms === 0)
+      if (unitType === 'Shop') {
+        combinedSummary['Shop'] += count;
+      } else if (unitType === 'Offices') {
+        combinedSummary['Offices'] += count;
+      } else if (unitType === 'Studios') {
         combinedSummary['Studios'] += count;
-      else if (noOfBedRooms >= 1 && noOfBedRooms <= 8) {
+      } else if (unitType === 'BR' && noOfBedRooms >= 1 && noOfBedRooms <= 8) {
         combinedSummary[`${noOfBedRooms} BR`] += count;
       }
     }
@@ -405,17 +515,112 @@ export class ProjectService {
     return combinedSummary;
   }
 
+  // async getPriceStatsIncludingAllPurposes(projectId: string) {
+  //   const stats = await this.inventoryModel.aggregate([
+  //     {
+  //       $match: {
+  //         project: new Types.ObjectId(projectId),
+  //       },
+  //     },
+  //     {
+  //       $project: {
+  //         unitType: 1,
+  //         noOfBedRooms: 1,
+  //         marketPrice: 1,
+  //         askingPrice: 1,
+  //         premiumLoss: { $subtract: ['$askingPrice', '$marketPrice'] },
+  //       },
+  //     },
+  //     {
+  //       $group: {
+  //         _id: {
+  //           unitType: '$unitType',
+  //           noOfBedRooms: '$noOfBedRooms',
+  //         },
+  //         marketPriceMin: { $min: '$marketPrice' },
+  //         marketPriceMax: { $max: '$marketPrice' },
+  //         askingPriceMin: { $min: '$askingPrice' },
+  //         askingPriceMax: { $max: '$askingPrice' },
+  //         premiumMin: { $min: '$premiumLoss' },
+  //         premiumMax: { $max: '$premiumLoss' },
+  //       },
+  //     },
+  //   ]);
+
+  //   // Define fixed unit type labels
+  //   const unitLabels = [
+  //     'Studio',
+  //     '1 BR',
+  //     '2 BR',
+  //     '3 BR',
+  //     '4 BR',
+  //     '5 BR',
+  //     '6 BR',
+  //     '7 BR',
+  //     '8 BR',
+  //   ];
+
+  //   // Initialize with 0s
+  //   const result = Object.fromEntries(
+  //     unitLabels.map((label) => [
+  //       label,
+  //       {
+  //         marketPrice: { min: 0, max: 0 },
+  //         askingPrice: { min: 0, max: 0 },
+  //         premium: { min: 0, max: 0 },
+  //       },
+  //     ]),
+  //   );
+
+  //   // Fill values from aggregation
+  //   for (const item of stats) {
+  //     const { unitType, noOfBedRooms } = item._id;
+  //     let label = '';
+
+  //     if (unitType === 'Studios' || noOfBedRooms === 0) label = 'Studio';
+  //     else if (noOfBedRooms >= 1 && noOfBedRooms <= 8)
+  //       label = `${noOfBedRooms} BR`;
+
+  //     if (result[label]) {
+  //       result[label] = {
+  //         marketPrice: { min: item.marketPriceMin, max: item.marketPriceMax },
+  //         askingPrice: { min: item.askingPriceMin, max: item.askingPriceMax },
+  //         premium: { min: item.premiumMin, max: item.premiumMax },
+  //       };
+  //     }
+  //   }
+
+  //   return result;
+  // }
   async getPriceStatsIncludingAllPurposes(projectId: string) {
     const stats = await this.inventoryModel.aggregate([
       {
         $match: {
-          project: new Types.ObjectId(projectId),
+          project: projectId, // FIXED: use string, not ObjectId
         },
       },
       {
         $project: {
-          unitType: 1,
-          noOfBedRooms: 1,
+          unitType: {
+            $switch: {
+              branches: [
+                { case: { $eq: ['$unitType', 'BedRoom'] }, then: 'BR' },
+                { case: { $eq: ['$unitType', 'Bedroom'] }, then: 'BR' },
+                { case: { $eq: ['$unitType', 'Studio'] }, then: 'Studios' },
+                { case: { $eq: ['$unitType', 'Offices'] }, then: 'Offices' },
+                { case: { $eq: ['$unitType', 'Office'] }, then: 'Offices' },
+                { case: { $eq: ['$unitType', 'Shop'] }, then: 'Shop' },
+              ],
+              default: 'Unknown',
+            },
+          },
+          noOfBedRooms: {
+            $cond: {
+              if: { $isNumber: '$noOfBedRooms' },
+              then: '$noOfBedRooms',
+              else: null,
+            },
+          },
           marketPrice: 1,
           askingPrice: 1,
           premiumLoss: { $subtract: ['$askingPrice', '$marketPrice'] },
@@ -437,7 +642,6 @@ export class ProjectService {
       },
     ]);
 
-    // Define fixed unit type labels
     const unitLabels = [
       'Studio',
       '1 BR',
@@ -450,7 +654,6 @@ export class ProjectService {
       '8 BR',
     ];
 
-    // Initialize with 0s
     const result = Object.fromEntries(
       unitLabels.map((label) => [
         label,
@@ -462,20 +665,30 @@ export class ProjectService {
       ]),
     );
 
-    // Fill values from aggregation
     for (const item of stats) {
       const { unitType, noOfBedRooms } = item._id;
       let label = '';
 
-      if (unitType === 'Studios' || noOfBedRooms === 0) label = 'Studio';
-      else if (noOfBedRooms >= 1 && noOfBedRooms <= 8)
+      if (unitType === 'Studios' || noOfBedRooms === 0) {
+        label = 'Studio';
+      } else if (unitType === 'BR' && noOfBedRooms >= 1 && noOfBedRooms <= 8) {
         label = `${noOfBedRooms} BR`;
+      }
 
-      if (result[label]) {
+      if (label && result[label]) {
         result[label] = {
-          marketPrice: { min: item.marketPriceMin, max: item.marketPriceMax },
-          askingPrice: { min: item.askingPriceMin, max: item.askingPriceMax },
-          premium: { min: item.premiumMin, max: item.premiumMax },
+          marketPrice: {
+            min: item.marketPriceMin ?? 0,
+            max: item.marketPriceMax ?? 0,
+          },
+          askingPrice: {
+            min: item.askingPriceMin ?? 0,
+            max: item.askingPriceMax ?? 0,
+          },
+          premium: {
+            min: item.premiumMin ?? 0,
+            max: item.premiumMax ?? 0,
+          },
         };
       }
     }
@@ -492,7 +705,7 @@ export class ProjectService {
         .populate('subDevelopment') // Populate subDevelopment
         .exec();
 
-      console.log(projectDoc);
+      console.log(await this.getInventorySummary(id));
 
       if (projectDoc?.plot) {
         return {
@@ -578,6 +791,22 @@ export class ProjectService {
       return {
         success: false,
       };
+    }
+  }
+
+  async delete(id: string): Promise<void> {
+    const session = await this.connection.startSession();
+    session.startTransaction();
+    try {
+      await this.projectModel.findByIdAndDelete({ _id: id }, { session });
+      await this.inventoryModel.deleteMany({ project: id }, { session });
+      await session.commitTransaction();
+    } catch (error) {
+      await session.abortTransaction();
+      console.error('Error deleting MasterDevelopment by ID:', error);
+      throw new Error('Failed to delete MasterDevelopment');
+    } finally {
+      session.endSession();
     }
   }
 }

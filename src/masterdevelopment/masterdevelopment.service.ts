@@ -20,6 +20,8 @@ import { MasterDevelopmentheaderMapping } from 'utils/methods/methods';
 import { Project } from 'src/project/schema/project.schema';
 import { Inventory } from 'src/inventory/schema/inventory.schema';
 import { SubDevelopment } from 'src/subdevelopment/schema/subdevelopment.schema';
+import { InjectConnection } from '@nestjs/mongoose';
+import { Connection } from 'mongoose';
 
 @Injectable()
 export class MasterDevelopmentService {
@@ -32,6 +34,7 @@ export class MasterDevelopmentService {
     private readonly ProjectModel: Model<Project>,
     @InjectModel(Inventory.name)
     private readonly InventoryModel: Model<Inventory>,
+    @InjectConnection() private readonly connection: Connection,
   ) {}
 
   async create(dto: CreateMasterDevelopmentDto): Promise<MasterDevelopment> {
@@ -335,11 +338,49 @@ export class MasterDevelopmentService {
   }
 
   async delete(id: string): Promise<void> {
+    const session = await this.connection.startSession();
+    session.startTransaction();
     try {
-      await this.MasterDevelopmentModel.findOneAndDelete({ _id: id }).exec();
+      await this.MasterDevelopmentModel.findOneAndDelete(
+        { _id: id },
+        { session },
+      );
+
+      const project = await this.ProjectModel.findOne(
+        { masterDevelopment: id },
+        null,
+        { session },
+      );
+
+      await this.MasterDevelopmentModel.findOneAndDelete(
+        { _id: id },
+        { session },
+      );
+
+      await this.subDevelopmentModel.deleteMany(
+        { masterDevelopment: id },
+        { session },
+      );
+
+      await this.ProjectModel.deleteMany(
+        { masterDevelopment: id },
+        { session },
+      );
+
+      if (project) {
+        await this.InventoryModel.deleteMany(
+          { project: project._id },
+          { session },
+        );
+      }
+
+      await session.commitTransaction();
     } catch (error) {
+      await session.abortTransaction();
       console.error('Error deleting MasterDevelopment by ID:', error);
       throw new Error('Failed to delete MasterDevelopment');
+    } finally {
+      session.endSession();
     }
   }
 

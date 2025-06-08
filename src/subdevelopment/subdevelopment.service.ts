@@ -21,6 +21,10 @@ import * as fs from 'fs';
 import { SubDevelopmentheaderMapping } from 'utils/methods/methods';
 import { MasterDevelopmentService } from 'src/masterdevelopment/masterdevelopment.service';
 import { SubDevelopmentRow } from './interface/sub-dev-interface';
+import { InjectConnection } from '@nestjs/mongoose';
+import { Connection } from 'mongoose';
+import { Inventory } from 'src/inventory/schema/inventory.schema';
+import { Project } from 'src/project/schema/project.schema';
 
 @Injectable()
 export class SubDevelopmentService {
@@ -28,6 +32,10 @@ export class SubDevelopmentService {
     @InjectModel(SubDevelopment.name)
     private readonly subDevelopmentModel: Model<SubDevelopment>,
     private readonly masterDevelopmentService: MasterDevelopmentService,
+    @InjectConnection() private readonly connection: Connection,
+    @InjectModel(Project.name) private readonly ProjectModel: Model<Project>,
+    @InjectModel(Inventory.name)
+    private readonly InventoryModel: Model<Inventory>,
   ) {}
 
   async create(dto: CreateSubDevelopmentDto): Promise<SubDevelopment> {
@@ -92,7 +100,7 @@ export class SubDevelopmentService {
           query.plotNumber = filter.plotNumber;
         }
 
-        console.log(query)
+        console.log(query);
 
         if (filter.plotStatus) {
           query.plotStatus = filter.plotStatus;
@@ -538,6 +546,37 @@ export class SubDevelopmentService {
       if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
       if (err instanceof BadRequestException) throw err;
       throw new InternalServerErrorException('Internal server error');
+    }
+  }
+
+  async delete(id: string): Promise<void> {
+    const session = await this.connection.startSession();
+    session.startTransaction();
+    try {
+      const project = await this.ProjectModel.findOne(
+        { subDevelopment: id },
+        null,
+        { session },
+      );
+
+      await this.subDevelopmentModel.findOneAndDelete({ _id: id }, { session });
+
+      await this.ProjectModel.deleteMany({ subDevelopment: id }, { session });
+
+      if (project) {
+        await this.InventoryModel.deleteMany(
+          { project: project._id },
+          { session },
+        );
+      }
+
+      await session.commitTransaction();
+    } catch (error) {
+      await session.abortTransaction();
+      console.error('Error deleting MasterDevelopment by ID:', error);
+      throw new Error('Failed to delete MasterDevelopment');
+    } finally {
+      session.endSession();
     }
   }
 }
