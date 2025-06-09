@@ -12,8 +12,10 @@ export enum ProjectQuality {
 
 export enum SalesStatus {
   PRIMARY = 'Primary',
-  OFF_PLANN_RESALE = 'Off Plan Resale',
+  PEDING = 'Pending',
   RESALE = 'Resale',
+  PRIMARY_RESALE = 'Primary Resale',
+  OFF_PLANN_RESALE = 'Off Plan Resale',
   PRIMARYPLUSOFFPLANRESALE = 'Primary + Off Plan Resale',
 }
 

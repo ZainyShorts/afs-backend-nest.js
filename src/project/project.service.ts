@@ -61,6 +61,7 @@ export class ProjectService {
       const query: any = {};
 
       if (filter) {
+        console.log(filter);
         // Plot filters
         // if (filter.plotNumber !== undefined) {
         //   query['plot.plotNumber'] = filter.plotNumber;
@@ -107,12 +108,25 @@ export class ProjectService {
           query.launchDate = filter.launchDate;
         }
 
+        if (filter.height) {
+          query.height = filter.height;
+        }
+
+        if (filter.commission) {
+          query.height = filter.commission;
+        }
+
+        if (filter.duringConstruction) {
+          query.height = filter.duringConstruction;
+        }
+
         if (filter.completionDate) {
           query.completionDate = filter.completionDate;
         }
 
         if (filter.uponCompletion) {
           query.uponCompletion = filter.uponCompletion;
+          console.log(query);
         }
 
         if (filter.installmentDate) {
@@ -176,35 +190,6 @@ export class ProjectService {
           const regex = new RegExp(filter.subDevelopment, 'i');
           return regex.test(item.subDevelopment?.subDevelopment || '');
         });
-
-        // console.log('before');
-
-        // console.log(data);
-
-        // Scenario 2: Further filtering by plot details within subDevelopment
-        // data = data.filter((item) => {
-        //   const subDevPlot = item.subDevelopment;
-        //   if (!subDevPlot) return true;
-
-        //   console.log(subDevPlot);
-
-        //   if (
-        //     filter.plotNumber !== undefined &&
-        //     subDevPlot.plotNumber !== filter.plotNumber
-        //   )
-        //     return false;
-        //   if (filter.plotStatus && subDevPlot.plotStatus !== filter.plotStatus)
-        //     return false;
-        //   if (
-        //     filter.plotPermission?.length > 0 &&
-        //     !subDevPlot.plotPermission.some((permission) =>
-        //       filter.plotPermission.includes(permission),
-        //     )
-        //   )
-        //     return false;
-
-        //   return true;
-        // });
       }
 
       // console.log(data);
@@ -380,60 +365,6 @@ export class ProjectService {
     return inventory;
   }
 
-  // async getCombinedRentAndSellInventorySummary(projectId: string) {
-  //   const unitPurposes = ['Rent', 'Sell'];
-
-  //   const inventoryStats = await this.inventoryModel.aggregate([
-  //     {
-  //       $match: {
-  //         project: new Types.ObjectId(projectId),
-  //         unitPurpose: { $in: unitPurposes },
-  //       },
-  //     },
-  //     {
-  //       $group: {
-  //         _id: {
-  //           unitType: '$unitType',
-  //           noOfBedRooms: '$noOfBedRooms',
-  //         },
-  //         count: { $sum: 1 },
-  //       },
-  //     },
-  //   ]);
-
-  //   const unitLabels = [
-  //     'Shop',
-  //     'Offices',
-  //     'Studios',
-  //     '1 BR',
-  //     '2 BR',
-  //     '3 BR',
-  //     '4 BR',
-  //     '5 BR',
-  //     '6 BR',
-  //     '7 BR',
-  //     '8 BR',
-  //   ];
-
-  //   const combinedSummary: Record<string, number> = Object.fromEntries(
-  //     unitLabels.map((label) => [label, 0]),
-  //   );
-
-  //   for (const item of inventoryStats) {
-  //     const { unitType, noOfBedRooms } = item._id;
-  //     const count = item.count;
-
-  //     if (unitType === 'Shop') combinedSummary['Shop'] += count;
-  //     else if (unitType === 'Offices') combinedSummary['Offices'] += count;
-  //     else if (unitType === 'Studios' || noOfBedRooms === 0)
-  //       combinedSummary['Studios'] += count;
-  //     else if (noOfBedRooms >= 1 && noOfBedRooms <= 8) {
-  //       combinedSummary[`${noOfBedRooms} BR`] += count;
-  //     }
-  //   }
-
-  //   return combinedSummary;
-  // }
   async getCombinedRentAndSellInventorySummary(projectId: string) {
     const unitPurposes = ['Rent', 'Sell'];
 
@@ -515,83 +446,6 @@ export class ProjectService {
     return combinedSummary;
   }
 
-  // async getPriceStatsIncludingAllPurposes(projectId: string) {
-  //   const stats = await this.inventoryModel.aggregate([
-  //     {
-  //       $match: {
-  //         project: new Types.ObjectId(projectId),
-  //       },
-  //     },
-  //     {
-  //       $project: {
-  //         unitType: 1,
-  //         noOfBedRooms: 1,
-  //         marketPrice: 1,
-  //         askingPrice: 1,
-  //         premiumLoss: { $subtract: ['$askingPrice', '$marketPrice'] },
-  //       },
-  //     },
-  //     {
-  //       $group: {
-  //         _id: {
-  //           unitType: '$unitType',
-  //           noOfBedRooms: '$noOfBedRooms',
-  //         },
-  //         marketPriceMin: { $min: '$marketPrice' },
-  //         marketPriceMax: { $max: '$marketPrice' },
-  //         askingPriceMin: { $min: '$askingPrice' },
-  //         askingPriceMax: { $max: '$askingPrice' },
-  //         premiumMin: { $min: '$premiumLoss' },
-  //         premiumMax: { $max: '$premiumLoss' },
-  //       },
-  //     },
-  //   ]);
-
-  //   // Define fixed unit type labels
-  //   const unitLabels = [
-  //     'Studio',
-  //     '1 BR',
-  //     '2 BR',
-  //     '3 BR',
-  //     '4 BR',
-  //     '5 BR',
-  //     '6 BR',
-  //     '7 BR',
-  //     '8 BR',
-  //   ];
-
-  //   // Initialize with 0s
-  //   const result = Object.fromEntries(
-  //     unitLabels.map((label) => [
-  //       label,
-  //       {
-  //         marketPrice: { min: 0, max: 0 },
-  //         askingPrice: { min: 0, max: 0 },
-  //         premium: { min: 0, max: 0 },
-  //       },
-  //     ]),
-  //   );
-
-  //   // Fill values from aggregation
-  //   for (const item of stats) {
-  //     const { unitType, noOfBedRooms } = item._id;
-  //     let label = '';
-
-  //     if (unitType === 'Studios' || noOfBedRooms === 0) label = 'Studio';
-  //     else if (noOfBedRooms >= 1 && noOfBedRooms <= 8)
-  //       label = `${noOfBedRooms} BR`;
-
-  //     if (result[label]) {
-  //       result[label] = {
-  //         marketPrice: { min: item.marketPriceMin, max: item.marketPriceMax },
-  //         askingPrice: { min: item.askingPriceMin, max: item.askingPriceMax },
-  //         premium: { min: item.premiumMin, max: item.premiumMax },
-  //       };
-  //     }
-  //   }
-
-  //   return result;
-  // }
   async getPriceStatsIncludingAllPurposes(projectId: string) {
     const stats = await this.inventoryModel.aggregate([
       {

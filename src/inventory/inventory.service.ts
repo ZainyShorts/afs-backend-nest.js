@@ -356,6 +356,212 @@ export class InventoryService {
       );
     }
   }
+  // async findAll(
+  //   page = 1,
+  //   limit = 10,
+  //   sortBy = 'createdAt',
+  //   sortOrder = 'desc',
+  //   filter?: InventoryFilterInput,
+  //   populate?: string,
+  // ): Promise<any> {
+  //   try {
+  //     const query: any = {};
+  //     const sortDirection = sortOrder === 'asc' ? 1 : -1;
+  //     const projectIds: Set<string> = new Set();
+
+  //     if (filter) {
+  //       // Apply projectName filter
+  //       if (filter.project) {
+  //         const projectDoc = await this.projectModel
+  //           .findOne({ projectName: filter.project })
+  //           .select('_id');
+  //         if (projectDoc) projectIds.add(projectDoc._id.toString());
+  //       }
+
+  //       // developmentName filter
+  //       if (filter.developmentName) {
+  //         const masterDev = await this.masterDevelopmentModel
+  //           .findOne({ developmentName: filter.developmentName })
+  //           .select('_id');
+  //         if (masterDev) {
+  //           const relatedProjects = await this.projectModel
+  //             .find({ masterDevelopment: masterDev._id })
+  //             .select('_id');
+  //           relatedProjects.forEach((p) => projectIds.add(p._id.toString()));
+  //         }
+  //       }
+
+  //       // roadLocation filter
+  //       if (filter.roadLocation) {
+  //         const masterDev = await this.masterDevelopmentModel
+  //           .findOne({ roadLocation: filter.roadLocation })
+  //           .select('_id');
+  //         if (masterDev) {
+  //           const relatedProjects = await this.projectModel
+  //             .find({ masterDevelopment: masterDev._id })
+  //             .select('_id');
+  //           relatedProjects.forEach((p) => projectIds.add(p._id.toString()));
+  //         }
+  //       }
+
+  //       // subDevelopment filter
+  //       if (filter.subDevelopment) {
+  //         const subDev = await this.subDevelopmenttModel
+  //           .findOne({ subDevelopment: filter.subDevelopment })
+  //           .select('_id');
+  //         if (subDev) {
+  //           const relatedProjects = await this.projectModel
+  //             .find({ subDevelopment: subDev._id })
+  //             .select('_id');
+  //           relatedProjects.forEach((p) => projectIds.add(p._id.toString()));
+  //         }
+  //       }
+
+  //       if (projectIds.size > 0) {
+  //         query.project = { $in: Array.from(projectIds) };
+  //       }
+
+  //       // Simple filters
+  //       if (filter.unitNumber) query.unitNumber = filter.unitNumber;
+  //       if (filter.unitPurpose) query.unitPurpose = filter.unitPurpose;
+  //       if (filter.unitInternalDesign)
+  //         query.unitInternalDesign = {
+  //           $regex: new RegExp(filter.unitInternalDesign, 'i'),
+  //         };
+  //       if (filter.unitExternalDesign)
+  //         query.unitExternalDesign = {
+  //           $regex: new RegExp(filter.unitExternalDesign, 'i'),
+  //         };
+  //       if (filter.unitHeight)
+  //         query.unitHeight = { $regex: new RegExp(filter.unitHeight, 'i') };
+  //       if (filter.listingDate) query.listingDate = filter.listingDate;
+  //       if (filter.rentedAt) query.rentedAt = filter.rentedAt;
+
+  //       // Range filters
+  //       if (filter.noOfBedRooms) {
+  //         query.noOfBedRooms = {};
+  //         if (filter.noOfBedRooms.min !== undefined)
+  //           query.noOfBedRooms.$gte = filter.noOfBedRooms.min;
+  //         if (filter.noOfBedRooms.max !== undefined)
+  //           query.noOfBedRooms.$lte = filter.noOfBedRooms.max;
+  //       }
+  //       if (filter.BuaSqFt) {
+  //         query.BuaSqFt = {};
+  //         if (filter.BuaSqFt.min !== undefined)
+  //           query.BuaSqFt.$gte = filter.BuaSqFt.min;
+  //         if (filter.BuaSqFt.max !== undefined)
+  //           query.BuaSqFt.$lte = filter.BuaSqFt.max;
+  //       }
+  //       if (filter.plotSizeSqFt) {
+  //         query.plotSizeSqFt = {};
+  //         if (filter.plotSizeSqFt.min !== undefined)
+  //           query.plotSizeSqFt.$gte = filter.plotSizeSqFt.min;
+  //         if (filter.plotSizeSqFt.max !== undefined)
+  //           query.plotSizeSqFt.$lte = filter.plotSizeSqFt.max;
+  //       }
+  //       if (filter.purchasePriceRange) {
+  //         query.purchasePrice = {};
+  //         if (filter.purchasePriceRange.min !== undefined)
+  //           query.purchasePrice.$gte = filter.purchasePriceRange.min;
+  //         if (filter.purchasePriceRange.max !== undefined)
+  //           query.purchasePrice.$lte = filter.purchasePriceRange.max;
+  //       }
+  //       if (filter.askingPriceRange) {
+  //         query.askingPrice = {};
+  //         if (filter.askingPriceRange.min !== undefined)
+  //           query.askingPrice.$gte = filter.askingPriceRange.min;
+  //         if (filter.askingPriceRange.max !== undefined)
+  //           query.askingPrice.$lte = filter.askingPriceRange.max;
+  //       }
+  //       if (filter.marketPriceRange) {
+  //         query.marketPrice = {};
+  //         if (filter.marketPriceRange.min !== undefined)
+  //           query.marketPrice.$gte = filter.marketPriceRange.min;
+  //         if (filter.marketPriceRange.max !== undefined)
+  //           query.marketPrice.$lte = filter.marketPriceRange.max;
+  //       }
+  //       if (filter.premiumAndLossRange) {
+  //         query.premiumAndLoss = {};
+  //         if (filter.premiumAndLossRange.min !== undefined)
+  //           query.premiumAndLoss.$gte = filter.premiumAndLossRange.min;
+  //         if (filter.premiumAndLossRange.max !== undefined)
+  //           query.premiumAndLoss.$lte = filter.premiumAndLossRange.max;
+  //       }
+  //       if (filter.marketRentRange) {
+  //         query.marketRent = {};
+  //         if (filter.marketRentRange.min !== undefined)
+  //           query.marketRent.$gte = filter.marketRentRange.min;
+  //         if (filter.marketRentRange.max !== undefined)
+  //           query.marketRent.$lte = filter.marketRentRange.max;
+  //       }
+  //       if (filter.askingRentRange) {
+  //         query.askingRent = {};
+  //         if (filter.askingRentRange.min !== undefined)
+  //           query.askingRent.$gte = filter.askingRentRange.min;
+  //         if (filter.askingRentRange.max !== undefined)
+  //           query.askingRent.$lte = filter.askingRentRange.max;
+  //       }
+  //       if (filter.startDate || filter.endDate) {
+  //         query.createdAt = {};
+  //         if (filter.startDate)
+  //           query.createdAt.$gte = new Date(filter.startDate);
+  //         if (filter.endDate) query.createdAt.$lte = new Date(filter.endDate);
+  //       }
+  //     }
+
+  //     const totalCount = await this.inventoryModel.countDocuments(query);
+
+  //     let queryBuilder = this.inventoryModel
+  //       .find(query)
+  //       .sort({ [sortBy]: sortDirection })
+  //       .skip((page - 1) * limit)
+  //       .limit(limit);
+
+  //     if (populate) {
+  //       const populateFields = populate.split(',').map((f) => f.trim());
+  //       const populateOptions: any = [];
+
+  //       if (populateFields.includes('project')) {
+  //         const nestedPopulate = [];
+  //         if (populateFields.includes('masterDevelopment')) {
+  //           nestedPopulate.push({
+  //             path: 'masterDevelopment',
+  //             select: 'developmentName roadLocation',
+  //           });
+  //         }
+  //         if (populateFields.includes('subDevelopment')) {
+  //           nestedPopulate.push({
+  //             path: 'subDevelopment',
+  //             select: 'subDevelopment',
+  //           });
+  //         }
+  //         populateOptions.push({
+  //           path: 'project',
+  //           select: 'projectName masterDevelopment subDevelopment',
+  //           populate: nestedPopulate.length ? nestedPopulate : undefined,
+  //         });
+  //       }
+
+  //       populateOptions.forEach((opt) => {
+  //         queryBuilder = queryBuilder.populate(opt);
+  //       });
+  //     }
+
+  //     const data = await queryBuilder.exec();
+
+  //     return {
+  //       data,
+  //       totalCount,
+  //       totalPages: Math.ceil(totalCount / limit),
+  //       pageNumber: page,
+  //     };
+  //   } catch (error) {
+  //     console.error('Error fetching Inventory:', error);
+  //     throw new InternalServerErrorException(
+  //       error?.message || 'An error occurred while fetching Inventory.',
+  //     );
+  //   }
+  // }
 
   async findOne(id: string): Promise<Inventory> {
     try {

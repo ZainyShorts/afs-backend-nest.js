@@ -14,6 +14,9 @@ export class ProjectFilterInput {
   postHandOver?: string;
   startDate?: string;
   endDate?: string;
+  duringConstruction?: number;
+  height?: number;
+  commission?: number;
   facilityCategories?: string[];
   amenitiesCategories?: string[];
 

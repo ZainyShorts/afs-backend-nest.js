@@ -61,38 +61,44 @@ export class Project {
   @Prop({ enum: ProjectQuality, required: true })
   projectQuality: ProjectQuality;
 
-  @Prop({ default: 0 })
+  @Prop()
   constructionStatus: number;
 
-  @Prop({ default: 'N/A', trim: true })
+  @Prop()
+  commission: number;
+
+  @Prop()
   launchDate: string;
 
-  @Prop({ default: 'N/A', trim: true })
+  @Prop()
+  height: string;
+
+  @Prop()
   completionDate: string;
 
   @Prop({ enum: SalesStatus })
   salesStatus: SalesStatus;
 
-  @Prop({ default: 0 })
+  @Prop()
   downPayment: number;
 
-  @Prop({ default: 0 })
+  @Prop()
   percentOfConstruction: number;
 
-  @Prop({ default: 'N/A', trim: true })
+  @Prop({ default: 0 })
+  duringConstruction: number;
+
+  @Prop()
   installmentDate: string;
 
-  @Prop({ default: 'N/A', trim: true })
+  @Prop()
   uponCompletion: string;
 
-  @Prop({ default: 'N/A', trim: true })
+  @Prop()
   postHandOver: string;
 
   @Prop([String])
   pictures: string[];
-
-  @Prop([String])
-  vidoes: string[];
 }
 
 export const ProjectSchema = SchemaFactory.createForClass(Project);

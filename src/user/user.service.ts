@@ -27,14 +27,40 @@ export class UserService {
   }
 
   // Get all users
-  async findAll(): Promise<User[]> {
+  async findAllPaginated(
+    page: number,
+    limit: number,
+    search: string,
+  ): Promise<any> {
     try {
-      return await this.userModel
-        .find({ role: { $ne: 'admin' } }) // Exclude users with 'admin' role
-        .select('-password') // Exclude the password field
-        .exec();
+      const skip = (page - 1) * limit;
+
+      const query: any = {
+        // role: { $ne: 'admin' },
+      };
+
+      if (search) {
+        query.name = { $regex: search, $options: 'i' }; // case-insensitive search
+      }
+
+      const [users, total] = await Promise.all([
+        this.userModel
+          .find(query)
+          .select('-password')
+          .skip(skip)
+          .limit(limit)
+          .exec(),
+        this.userModel.countDocuments(query),
+      ]);
+
+      return {
+        totalRecords: total,
+        currentPage: page,
+        limit: limit,
+        users,
+      };
     } catch (error) {
-      console.error('Error fetching users:', error);
+      console.error('Error fetching paginated users with search:', error);
       throw error;
     }
   }
@@ -73,6 +99,51 @@ export class UserService {
         .exec();
     } catch (error) {
       console.error('Error updating user:', error);
+      throw error;
+    }
+  }
+
+  async updateUserAccess(userId: string, access: boolean): Promise<any> {
+    try {
+      const updatedUser = await this.userModel
+        .findByIdAndUpdate(userId, { access }, { new: true })
+        .select('-password');
+
+      if (!updatedUser) {
+        throw new Error('User not found');
+      }
+
+      return {
+        message: 'User access updated successfully',
+        user: updatedUser,
+      };
+    } catch (error) {
+      console.error('Error updating access:', error);
+      throw error;
+    }
+  }
+
+  async updateBanStatus(userId: string, banned: boolean): Promise<any> {
+    try {
+      const updateFields: any = {
+        banned,
+        attempts: banned ? 0 : 3,
+      };
+
+      const updatedUser = await this.userModel
+        .findByIdAndUpdate(userId, updateFields, { new: true })
+        .select('-password');
+
+      if (!updatedUser) {
+        throw new Error('User not found');
+      }
+
+      return {
+        message: `User ${banned ? 'banned' : 'unbanned'} successfully`,
+        user: updatedUser,
+      };
+    } catch (error) {
+      console.error('Error updating ban status:', error);
       throw error;
     }
   }

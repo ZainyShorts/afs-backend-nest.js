@@ -22,8 +22,8 @@ export class SubDevelopment extends Document {
   @Prop({ required: true })
   plotHeight: number;
 
-  @Prop({ required: true })
-  plotPermission: PropertyType[];
+  @Prop({ required: true, enum: PropertyType, type: [String] })
+  plotPermission: string[];
 
   @Prop({ default: 0 })
   plotSizeSqFt: number;
@@ -31,7 +31,7 @@ export class SubDevelopment extends Document {
   @Prop({ default: 0 })
   plotBUASqFt: number;
 
-  @Prop({ enum: PlotStatus, required: true })
+  @Prop({ enum: PlotStatus })
   plotStatus: string;
 
   @Prop({ default: 0 })

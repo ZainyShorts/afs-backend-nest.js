@@ -7,6 +7,7 @@ import {
   Param,
   Delete,
   Patch,
+  Query,
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -21,10 +22,29 @@ export class UserController {
     return this.userService.create(createUserDto);
   }
 
+  @Patch(':id/access')
+  async changeAccess(@Param('id') id: string, @Body('access') access: boolean) {
+    return this.userService.updateUserAccess(id, access);
+  }
+
+  @Patch(':id/ban')
+  async changeBanStatus(
+    @Param('id') id: string,
+    @Body('banned') banned: boolean,
+  ) {
+    return this.userService.updateBanStatus(id, banned);
+  }
+
   // Get all users
   @Get()
-  async findAll() {
-    return this.userService.findAll();
+  async findAll(
+    @Query('page') page = 1,
+    @Query('limit') limit = 10,
+    @Query('search') search = '',
+  ) {
+    const pageNum = parseInt(page as any, 10);
+    const limitNum = parseInt(limit as any, 10);
+    return this.userService.findAllPaginated(pageNum, limitNum, search);
   }
 
   // Get user by ID
