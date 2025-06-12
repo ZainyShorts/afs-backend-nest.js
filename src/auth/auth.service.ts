@@ -1,3 +1,4 @@
+/* eslint-disable prettier/prettier */
 import {
   Injectable,
   InternalServerErrorException,
@@ -129,6 +130,58 @@ export class AuthService {
       throw new InternalServerErrorException(
         'Failed to login. Please try again later.',
       );
+    }
+  }
+
+  async adminLogin(loginDto: LoginDto): Promise<any> {
+    try {
+      const user: any = await this.userService.findByEmail(loginDto.email);
+
+      if (!user) {
+        return {
+          success: false,
+          message: 'User not found',
+        };
+      }
+
+      if (!user.access) {
+        return {
+          success: false,
+          message: 'Your Access blocked by admin 🚫',
+        };
+      }
+
+
+
+      const isPasswordValid = await this.userService.comparePasswords(
+        loginDto.password,
+        user.password,
+      );
+
+      if (!isPasswordValid) {
+        return {
+          success: false,
+          message: 'Invalid email or password',
+        };
+      }
+
+      if (user.role !== 'admin') {
+        return {
+          success: false,
+          message: 'Access denied. Admins only.',
+        };
+      }
+
+      const payload = { sub: user._id, role: user.role };
+      const token = this.jwtService.sign(payload, { expiresIn: '1h' });
+
+      return {
+        success: true,
+        token,
+      };
+    } catch (error) {
+      console.error('Error in admin login:', error);
+      throw new InternalServerErrorException('Login failed. Try again later.');
     }
   }
 

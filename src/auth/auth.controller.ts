@@ -29,6 +29,11 @@ export class AuthController {
     return { success: true };
   }
 
+  @Post('admin/login')
+  async adminLogin(@Body() loginDto: LoginDto) {
+    return this.authService.adminLogin(loginDto);
+  }
+
   @Post('verify-login')
   async verifyLogin(
     @Body() dto: { email: string; otp: string },
