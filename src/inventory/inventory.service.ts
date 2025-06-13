@@ -209,6 +209,18 @@ export class InventoryService {
             query.createdAt.$lte = new Date(filter.endDate);
           }
         }
+
+        if (filter.paymentPlan1) {
+          query.paymentPlan1 = filter.paymentPlan1;
+        }
+
+        if (filter.paymentPlan2) {
+          query.paymentPlan2 = filter.paymentPlan2;
+        }
+
+        if (filter.paymentPlan3) {
+          query.paymentPlan3 = filter.paymentPlan3;
+        }
       }
 
       const sortDirection = sortOrder === 'asc' ? 1 : -1;
@@ -245,6 +257,26 @@ export class InventoryService {
             if (field !== 'masterDevelopment' && field !== 'subDevelopment') {
               populateOptions.push({ path: field });
             }
+          });
+        }
+        if (populateFields.includes('paymentPlan1')) {
+          populateOptions.push({
+            path: 'paymentPlan1.plan',
+            select: 'date constructionPercent amountt',
+          });
+        }
+
+        if (populateFields.includes('paymentPlan2')) {
+          populateOptions.push({
+            path: 'paymentPlan2.plan',
+            select: 'date constructionPercent amountt',
+          });
+        }
+
+        if (populateFields.includes('paymentPlan3')) {
+          populateOptions.push({
+            path: 'paymentPlan3.plan',
+            select: 'date constructionPercent amountt',
           });
         }
       }

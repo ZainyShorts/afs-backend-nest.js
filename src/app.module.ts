@@ -16,7 +16,8 @@ import { ProjectModule } from './project/project.module';
 import { UserModule } from './user/user.module';
 import { AuthModule } from './auth/auth.module';
 import { MailModule } from './mail/mail.module';
-import { PaymentplanModule } from './paymentplan/paymentplan.module';
+
+
 
 @Module({
   imports: [
@@ -37,9 +38,11 @@ import { PaymentplanModule } from './paymentplan/paymentplan.module';
     ProjectModule,
     AuthModule,
     MailModule,
-    PaymentplanModule,
+
+  
   ],
   controllers: [AppController, EventsController],
   providers: [AppService, AppResolver, EventsGateway],
 })
 export class AppModule {}
+

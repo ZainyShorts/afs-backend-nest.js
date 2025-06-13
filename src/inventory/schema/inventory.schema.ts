@@ -4,6 +4,25 @@ import { Project } from 'src/project/schema/project.schema';
 // import { User } from 'src/user/schema/user.schema';
 import { UnitPurpose, unitType } from 'utils/enum/enums';
 
+export class paymentPlanType {
+  @Prop({ type: String })
+  date: string;
+
+  @Prop({ type: Number })
+  constructionPercent: number;
+
+  @Prop({ type: Number })
+  amount: number;
+}
+
+export class paymentPlan {
+  @Prop({ type: Number, default: 0 })
+  developerPrice: number;
+
+  @Prop({ type: [paymentPlanType], default: [] })
+  plan: paymentPlanType[];
+}
+
 @Schema({
   timestamps: true,
 })
@@ -70,6 +89,15 @@ export class Inventory extends Document {
 
   @Prop({ type: Number })
   askingRent: number;
+
+  @Prop({ type: [paymentPlan] })
+  paymentPlan1: paymentPlan[];
+
+  @Prop({ type: [paymentPlan] })
+  paymentPlan2: paymentPlan[];
+
+  @Prop({ type: [paymentPlan] })
+  paymentPlan3: paymentPlan[];
 
   @Prop({ type: [String] })
   pictures: string[];
