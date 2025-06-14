@@ -1,3 +1,4 @@
+import { Field } from '@nestjs/graphql';
 import {
   IsString,
   IsNumber,
@@ -6,6 +7,7 @@ import {
   IsOptional,
 } from 'class-validator';
 import { UnitPurpose, unitType } from 'utils/enum/enums';
+import { paymentPlan, paymentPlanType } from '../schema/inventory.schema';
 
 export class UpdateInventoryDto {
   @IsOptional()
@@ -101,4 +103,19 @@ export class UpdateInventoryDto {
   @IsOptional()
   @IsString()
   payableTODevelopers?: string;
+
+  @Field(() => [paymentPlan], { nullable: true })
+  @IsOptional()
+  @IsString()
+  paymentPlan1?: paymentPlanType[];
+
+  @Field(() => [paymentPlan], { nullable: true })
+  @IsOptional()
+  @IsString()
+  paymentPlan2?: paymentPlanType[];
+
+  @Field(() => [paymentPlan], { nullable: true })
+  @IsOptional()
+  @IsString()
+  paymentPlan3?: paymentPlanType[];
 }
