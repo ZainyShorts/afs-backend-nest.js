@@ -66,4 +66,10 @@ export class InventoryFilterInput {
 
   startDate?: string; // Can be used to filter by createdAt range
   endDate?: string;
+
+  // paymentPlan?: {
+    paymentPlan1?: {};
+    paymentPlan2?: {};
+    paymentPlan3?: {};
+  // };
 }
