@@ -10,6 +10,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         (req) => {
           // 1. Try to extract from Authorization header
           const authHeader = req.headers.authorization;
+          console.log(authHeader);
           if (authHeader && authHeader.startsWith('Bearer ')) {
             const token = authHeader.split(' ')[1];
             console.log('Extracted JWT token from header:', token);

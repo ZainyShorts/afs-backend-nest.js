@@ -1,5 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
+import { Document, Types } from 'mongoose';
+import { User } from 'src/user/schema/user.schema';
 import {
   AmenitiesCategory,
   FacilitiesCategory,
@@ -11,6 +12,9 @@ import {
   timestamps: true,
 })
 export class MasterDevelopment extends Document {
+  @Prop({ type: Types.ObjectId, ref: 'User', required: true })
+  user: User;
+
   @Prop({ required: true, trim: true })
   country: string;
 

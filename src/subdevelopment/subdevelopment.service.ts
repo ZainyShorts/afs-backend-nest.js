@@ -38,7 +38,10 @@ export class SubDevelopmentService {
     private readonly InventoryModel: Model<Inventory>,
   ) {}
 
-  async create(dto: CreateSubDevelopmentDto): Promise<SubDevelopment> {
+  async create(
+    dto: CreateSubDevelopmentDto,
+    userId: string,
+  ): Promise<SubDevelopment> {
     try {
       // Optional validation (can be enum based if needed)
       if (dto.facilitiesCategories) {
@@ -61,7 +64,7 @@ export class SubDevelopmentService {
         }
       }
 
-      const created = new this.subDevelopmentModel(dto);
+      const created = new this.subDevelopmentModel({ ...dto, userId });
       return await created.save();
     } catch (error) {
       console.log(error);
@@ -272,7 +275,7 @@ export class SubDevelopmentService {
     }
   }
 
-  async import(filePath: string): Promise<any> {
+  async import(filePath: string, userId: string): Promise<any> {
     try {
       /* --------------------------------------------------------------------- */
       /* 1️⃣  Read & parse Excel                                               */
@@ -285,6 +288,7 @@ export class SubDevelopmentService {
       });
 
       jsonData = jsonData.slice(0, 2);
+
       /* --------------------------------------------------------------------- */
       /* 2️⃣  Transform + strict-validate each row                              */
       /* --------------------------------------------------------------------- */
@@ -454,8 +458,10 @@ export class SubDevelopmentService {
         ]);
       const devMap = new Map(devList.map((d) => [d.developmentName, d._id]));
 
-      const mappedData: (SubDevelopmentRow & { masterDevelopment: string })[] =
-        [];
+      const mappedData: (SubDevelopmentRow & {
+        masterDevelopment: string;
+        user: string;
+      })[] = [];
 
       for (let i = 0; i < formattedData.length; i++) {
         const row = formattedData[i];
@@ -466,7 +472,12 @@ export class SubDevelopmentService {
             message: `No master development found at row ${i + 1}`,
           };
         }
-        mappedData.push({ ...row, masterDevelopment: id as string });
+        // mappedData.push({ ...row, masterDevelopment: id as string });
+        mappedData.push({
+          ...row,
+          masterDevelopment: id as string,
+          user: userId,
+        });
       }
 
       /* --------------------------------------------------------------------- */
@@ -548,6 +559,253 @@ export class SubDevelopmentService {
       throw new InternalServerErrorException('Internal server error');
     }
   }
+  // async import(filePath: string): Promise<any> {
+  //   const expectedHeaders = [
+  //     'Development Name',
+  //     'Sub Development',
+  //     'Plot Number',
+  //     'Plot Height',
+  //     'Plot Permission 1',
+  //     'Plot Permission 2',
+  //     'Plot Permission 3',
+  //     'Plot Permission 4',
+  //     'Plot Permission 5',
+  //     'Plot Size Sq. Ft.',
+  //     'Plot BUA Sq. Ft.',
+  //     'Plot Status',
+  //     'BUA Area Sq. Ft.',
+  //     'Facilities Area Sq. Ft.',
+  //     'Amenities Area Sq. Ft.',
+  //   ].map((h) => h.replace(/\n/g, '').trim());
+
+  //   try {
+  //     const workbook = XLSX.read(fs.readFileSync(filePath), { type: 'buffer' });
+  //     const sheet = workbook.Sheets[workbook.SheetNames[0]];
+  //     const jsonData = XLSX.utils.sheet_to_json(sheet, {
+  //       defval: '',
+  //       blankrows: false,
+  //     });
+
+  //     // Validate headers
+  //     const rawHeaders = Object.keys(jsonData[0] || {}).map((key) =>
+  //       key.replace(/\n/g, '').trim(),
+  //     );
+
+  //     const allHeadersPresent = expectedHeaders.every((h) =>
+  //       rawHeaders.includes(h),
+  //     );
+
+  //     if (!allHeadersPresent) {
+  //       return {
+  //         success: false,
+  //         message:
+  //           'Excel header does not match expected format. Please upload a correct file.',
+  //       };
+  //     }
+
+  //     const numericFields: (keyof SubDevelopmentRow)[] = [
+  //       'plotHeight',
+  //       'plotSizeSqFt',
+  //       'plotBUASqFt',
+  //       'buaAreaSqFt',
+  //       'facilitiesAreaSqFt',
+  //       'amentiesAreaSqFt',
+  //       'totalAreaSqFt',
+  //     ];
+
+  //     const permissionKeys: (keyof SubDevelopmentRow)[] = [
+  //       'plotPermission1',
+  //       'plotPermission2',
+  //       'plotPermission3',
+  //       'plotPermission4',
+  //       'plotPermission5',
+  //     ];
+
+  //     const stringFields: (keyof SubDevelopmentRow)[] = [
+  //       'developmentName',
+  //       'subDevelopment',
+  //       'plotNumber',
+  //     ];
+
+  //     const requiredFields: (keyof SubDevelopmentRow)[] = [
+  //       'developmentName',
+  //       'subDevelopment',
+  //       'plotNumber',
+  //       'plotHeight',
+  //       'plotStatus',
+  //     ];
+
+  //     const formattedData: SubDevelopmentRow[] = [];
+  //     const skippedRows: any[] = [];
+
+  //     for (let r = 0; r < jsonData.length; r++) {
+  //       const raw = jsonData[r];
+  //       const row: Partial<SubDevelopmentRow> = { plotPermission: [] };
+
+  //       for (const rawKey in raw as Record<string, any>) {
+  //         const cleaned = rawKey.replace(/\n/g, '').trim();
+  //         const mappedKey = SubDevelopmentheaderMapping[cleaned] as
+  //           | keyof SubDevelopmentRow
+  //           | undefined;
+  //         if (!mappedKey) continue;
+
+  //         const value = (raw as Record<string, any>)[rawKey];
+
+  //         if (mappedKey === 'plotStatus') {
+  //           if (!Object.values(PlotStatus).includes(value)) {
+  //             skippedRows.push({
+  //               row: r + 1,
+  //               reason: `Invalid PlotStatus "${value}"`,
+  //             });
+  //             continue;
+  //           }
+  //           row.plotStatus = value;
+  //           continue;
+  //         }
+
+  //         if (numericFields.includes(mappedKey)) {
+  //           if (value === '' || isNaN(Number(value))) {
+  //             skippedRows.push({
+  //               row: r + 1,
+  //               reason: `"${cleaned}" must be a number`,
+  //             });
+  //             continue;
+  //           }
+  //           (row as any)[mappedKey] = Number(value);
+  //           continue;
+  //         }
+
+  //         if (permissionKeys.includes(mappedKey)) {
+  //           if (value !== '' && !Object.values(PropertyType).includes(value)) {
+  //             skippedRows.push({
+  //               row: r + 1,
+  //               reason: `Invalid PropertyType "${value}"`,
+  //             });
+  //             continue;
+  //           }
+  //           (row as any)[mappedKey] = value;
+  //           continue;
+  //         }
+
+  //         if (stringFields.includes(mappedKey)) {
+  //           (row as any)[mappedKey] = String(value);
+  //         }
+  //       }
+
+  //       if (requiredFields.some((k) => !row[k])) {
+  //         skippedRows.push({ row: r + 1, reason: 'Missing required field(s)' });
+  //         continue;
+  //       }
+
+  //       row.plotPermission = permissionKeys
+  //         .map((k) => row[k])
+  //         .filter(Boolean) as PropertyType[];
+  //       permissionKeys.forEach((k) => delete row[k]);
+
+  //       if (row.plotPermission.length === 0) {
+  //         skippedRows.push({
+  //           row: r + 1,
+  //           reason: 'At least one permission required',
+  //         });
+  //         continue;
+  //       }
+
+  //       row.totalAreaSqFt =
+  //         (row.buaAreaSqFt || 0) +
+  //         (row.facilitiesAreaSqFt || 0) +
+  //         (row.amentiesAreaSqFt || 0);
+
+  //       formattedData.push(row as SubDevelopmentRow);
+  //     }
+
+  //     const devList =
+  //       await this.masterDevelopmentService.getAllMasterDevelopment([
+  //         '_id',
+  //         'developmentName',
+  //       ]);
+  //     const devMap = new Map(devList.map((d) => [d.developmentName, d._id]));
+
+  //     const mappedData: (SubDevelopmentRow & { masterDevelopment: string })[] =
+  //       [];
+
+  //     for (let i = 0; i < formattedData.length; i++) {
+  //       const row = formattedData[i];
+  //       const id = devMap.get(row.developmentName.trim());
+  //       if (!id) {
+  //         skippedRows.push({
+  //           row: i + 1,
+  //           reason: 'No master development found',
+  //         });
+  //         continue;
+  //       }
+  //       mappedData.push({ ...row, masterDevelopment: id as string });
+  //     }
+
+  //     const seen = new Set<string>();
+  //     const uniqueData = mappedData.filter((r) => {
+  //       const key = `${r.subDevelopment}-${r.plotNumber}`;
+  //       if (seen.has(key)) return false;
+  //       seen.add(key);
+  //       return true;
+  //     });
+
+  //     const existingDocs = await this.subDevelopmentModel
+  //       .find({
+  //         $or: uniqueData.map((row) => ({
+  //           subDevelopment: row.subDevelopment.trim(),
+  //           plotNumber: row.plotNumber.trim(),
+  //         })),
+  //       })
+  //       .select('subDevelopment plotNumber')
+  //       .lean();
+
+  //     const existingKeys = new Set(
+  //       existingDocs.map(
+  //         (doc) => `${doc.subDevelopment.trim()}|${doc.plotNumber}`,
+  //       ),
+  //     );
+
+  //     const filteredList = uniqueData.filter((row) => {
+  //       const key = `${row.subDevelopment.trim()}|${row.plotNumber.trim()}`;
+  //       return !existingKeys.has(key);
+  //     });
+
+  //     let inserted = 0;
+  //     const batchSize = 5000;
+
+  //     for (let i = 0; i < filteredList.length; i += batchSize) {
+  //       const chunk = filteredList.slice(i, i + batchSize);
+  //       try {
+  //         const res = await this.subDevelopmentModel.insertMany(chunk);
+  //         inserted += res.length;
+  //       } catch (e) {
+  //         skippedRows.push({
+  //           batch: `${i}-${i + chunk.length}`,
+  //           reason: e.message,
+  //         });
+  //       }
+  //     }
+
+  //     return {
+  //       success: true,
+  //       totalEntries: jsonData.length,
+  //       insertedEntries: inserted,
+  //       skippedInvalidEntries: skippedRows.length,
+  //       skippedDetails: skippedRows,
+  //     };
+  //     // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  //   } catch (err) {
+  //     throw new InternalServerErrorException('Internal server error');
+  //   } finally {
+  //     if (fs.existsSync(filePath)) {
+  //       try {
+  //         fs.unlinkSync(filePath);
+  //       } catch (unlinkErr) {
+  //         console.error('Failed to delete file:', unlinkErr);
+  //       }
+  //     }
+  //   }
+  // }
 
   async delete(id: string): Promise<void> {
     const session = await this.connection.startSession();

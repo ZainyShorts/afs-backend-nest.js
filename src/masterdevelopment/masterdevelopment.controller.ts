@@ -9,6 +9,8 @@ import {
   Query,
   UseInterceptors,
   UploadedFile,
+  UseGuards,
+  Req,
 } from '@nestjs/common';
 import { CreateMasterDevelopmentDto } from './dto/create-master-development.dto';
 import { MasterDevelopmentService } from './masterdevelopment.service';
@@ -18,20 +20,24 @@ import {
   multerOptionsForXlxs,
   UploadedFileType,
 } from 'utils/multer/multer.config';
+import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
+import { RequestWithUser } from 'utils/interface/interfaces';
 
 @Controller('masterDevelopment')
 export class MasterDevelopmentController {
   constructor(private readonly service: MasterDevelopmentService) {}
 
+  @UseGuards(JwtAuthGuard)
   @Post('addSingleRecord')
-  create(@Body() dto: CreateMasterDevelopmentDto) {
-    return this.service.create(dto);
+  create(@Body() dto: CreateMasterDevelopmentDto, @Req() req: RequestWithUser) {
+    return this.service.create(dto, req.user.userId);
   }
 
+  @UseGuards(JwtAuthGuard)
   @Post('import')
   @UseInterceptors(FileInterceptor('file', multerOptionsForXlxs))
-  import(@UploadedFile() file: UploadedFileType) {
-    return this.service.importExcelFile(file.path);
+  import(@UploadedFile() file: UploadedFileType, @Req() req: RequestWithUser) {
+    return this.service.importExcelFile(file.path, req.user.userId);
   }
 
   @Get()

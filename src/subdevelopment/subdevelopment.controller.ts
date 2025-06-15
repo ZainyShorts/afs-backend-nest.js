@@ -9,6 +9,8 @@ import {
   Query,
   UseInterceptors,
   UploadedFile,
+  UseGuards,
+  Req,
 } from '@nestjs/common';
 import { SubDevelopmentService } from './subdevelopment.service';
 import { CreateSubDevelopmentDto } from './dto/create-sub-development.dto';
@@ -18,20 +20,24 @@ import {
   multerOptionsForXlxs,
   UploadedFileType,
 } from 'utils/multer/multer.config';
+import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
+import { RequestWithUser } from 'utils/interface/interfaces';
 
 @Controller('subDevelopment')
 export class SubDevelopmentController {
   constructor(private readonly service: SubDevelopmentService) {}
 
+  @UseGuards(JwtAuthGuard)
   @Post('addSingleRecord')
-  create(@Body() dto: CreateSubDevelopmentDto) {
-    return this.service.create(dto);
+  create(@Body() dto: CreateSubDevelopmentDto, @Req() req: RequestWithUser) {
+    return this.service.create(dto, req.user.userId);
   }
 
+  @UseGuards(JwtAuthGuard)
   @Post('import')
   @UseInterceptors(FileInterceptor('file', multerOptionsForXlxs))
-  import(@UploadedFile() file: UploadedFileType) {
-    return this.service.import(file.path);
+  import(@UploadedFile() file: UploadedFileType, @Req() req: RequestWithUser) {
+    return this.service.import(file.path, req.user.userId);
   }
 
   @Get()
@@ -71,3 +77,4 @@ export class SubDevelopmentController {
     return this.service.remove(id);
   }
 }
+
