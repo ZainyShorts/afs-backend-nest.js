@@ -30,17 +30,41 @@ export class InventoryService {
     private masterDevelopmentModel: Model<Inventory>,
   ) {}
 
-  async create(dto: CreateInventorytDto): Promise<Inventory> {
+  async create(dto: CreateInventorytDto): Promise<any> {
     try {
-      console.log(dto);
+      // Check if unit number already exists for this project
+      const existingUnit = await this.inventoryModel.findOne({
+        project: dto.project,
+        unitNumber: dto.unitNumber
+      });
+
+      if (existingUnit) {
+        console.log(
+          `Unit number ${dto.unitNumber} already exists in this project`,
+        );
+        return {
+          success: false,
+          message: `Unit number ${dto.unitNumber} already exists in this project`,
+          statusCode: 400
+        };
+      }
+
       const created = new this.inventoryModel(dto);
-      return await created.save();
+      const saved = await created.save();
+      
+      return {
+        success: true,
+        message: 'Unit created successfully',
+        data: saved,
+        statusCode: 201
+      };
     } catch (error) {
-      // Throw Internal Server Error
       console.log(error);
-      throw new InternalServerErrorException(
-        error?.response?.message || 'Internal server error occurred.',
-      );
+      return {
+        success: false,
+        message: error?.response?.message || 'Internal server error occurred.',
+        statusCode: 500
+      };
     }
   }
 
@@ -633,6 +657,22 @@ export class InventoryService {
     updateData: UpdateInventoryDto,
   ): Promise<any> {
     try {
+      const existingUnit = await this.inventoryModel.findOne({
+        project: updateData.project,
+        unitNumber: updateData.unitNumber,
+      });
+
+      if (existingUnit) {
+        console.log(
+          `Unit number ${updateData.unitNumber} already exists in this project`,
+        );
+        return {
+          success: false,
+          message: `Unit number ${updateData.unitNumber} already exists in this project`,
+          statusCode: 400,
+        };
+      }
+
       const updatedProperty = await this.inventoryModel.findByIdAndUpdate(
         id,
         updateData,
