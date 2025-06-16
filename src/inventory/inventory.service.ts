@@ -26,11 +26,11 @@ import { UnitPurpose, unitType } from 'utils/enum/enums';
 export class InventoryService {
   constructor(
     @InjectModel(Inventory.name) private inventoryModel: Model<Inventory>,
-    @InjectModel(Project.name) private projectModel: Model<Inventory>,
+    @InjectModel(Project.name) private projectModel: Model<Project>,
     @InjectModel(SubDevelopment.name)
-    private subDevelopmenttModel: Model<Inventory>,
+    private subDevelopmenttModel: Model<SubDevelopment>,
     @InjectModel(MasterDevelopment.name)
-    private masterDevelopmentModel: Model<Inventory>,
+    private masterDevelopmentModel: Model<MasterDevelopment>,
   ) {}
 
   async create(dto: CreateInventorytDto): Promise<any> {
@@ -773,6 +773,29 @@ export class InventoryService {
       const validRows: any[] = [];
       const invalidRows: any[] = [];
 
+      // Get all unique project names from the data
+      const projectNames = [...new Set(rowData.map((row: any) => row['Project']))];
+
+      // Fetch all projects by name
+      const projects = await this.projectModel.find({
+        projectName: { $in: projectNames }
+      }).lean();
+
+      // Create a map of project names to IDs
+      const projectMap = new Map(
+        projects.map(project => [project.projectName, project._id.toString()])
+      );
+
+      // Check for missing projects
+      const missingProjects = projectNames.filter(name => !projectMap.has(name));
+      if (missingProjects.length > 0) {
+        return {
+          success: false,
+          message: 'Some projects not found in the database',
+          missingProjects,
+        };
+      }
+
       rowData.forEach((row: any, index: number) => {
         const formattedRow: any = {};
         for (const key in row) {
@@ -781,6 +804,11 @@ export class InventoryService {
           if (mappedKey) {
             formattedRow[mappedKey] = row[key];
           }
+        }
+
+        // Replace project name with project ID
+        if (formattedRow.project) {
+          formattedRow.project = projectMap.get(formattedRow.project);
         }
 
         // Handle unitView as array if it's a string
