@@ -816,6 +816,13 @@ export class InventoryService {
           formattedRow.unitView = formattedRow.unitView.split(',').map((v: string) => v.trim());
         }
 
+        // Calculate premium/loss if not provided
+        if (formattedRow.purchasePrice && formattedRow.marketPrice) {
+          if (!formattedRow.premiumAndLoss) {
+            formattedRow.premiumAndLoss = Number(formattedRow.purchasePrice) - Number(formattedRow.marketPrice);
+          }
+        }
+
         const missingFields = requiredFields.filter(
           (field) =>
             formattedRow[field] === undefined ||

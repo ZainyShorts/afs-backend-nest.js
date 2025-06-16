@@ -76,7 +76,6 @@ export class InventoryController {
     @UploadedFile() file: UploadedFileType,
   ): Promise<ResponseDto> {
     console.log('import');
-    console.log(ResponseDto);
     return this.inventoryService.import(file.path);
   }
 }
