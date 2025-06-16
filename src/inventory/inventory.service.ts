@@ -56,8 +56,7 @@ export class InventoryService {
           plan: [],
         },
         paymentPlan3: {
-          developerPrice:
-            Array.isArray(dto.paymentPlan3) && dto.paymentPlan3.length === 0
+          developerPrice:  Array.isArray(dto.paymentPlan3) && dto.paymentPlan3.length === 0
               ? 0
               : Array.isArray(dto.paymentPlan3) && dto.paymentPlan3[0]
                 ? dto.paymentPlan3[0]['developerPrice'] || 0

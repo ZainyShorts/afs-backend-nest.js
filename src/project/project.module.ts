@@ -8,10 +8,21 @@ import {
   Inventory,
   InventorySchema,
 } from 'src/inventory/schema/inventory.schema';
+import {
+  MasterDevelopment,
+  MasterDevelopmentSchema,
+} from 'src/masterdevelopment/schema/master-development.schema';
+import {
+  SubDevelopment,
+  SubDevelopmentSchema,
+} from 'src/subdevelopment/schema/subdevelopment.schema';
 
 @Module({
   imports: [
     MongooseModule.forFeature([
+      { name: MasterDevelopment.name, schema: MasterDevelopmentSchema },
+      { name: SubDevelopment.name, schema: SubDevelopmentSchema },
+      { name: Inventory.name, schema: InventorySchema },
       { name: Project.name, schema: ProjectSchema },
       { name: Inventory.name, schema: InventorySchema },
     ]),

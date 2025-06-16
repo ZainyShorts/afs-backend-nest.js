@@ -11,13 +11,15 @@ import {
   Inventory,
   InventoryDocument,
 } from '../inventory/schema/inventory.schema';
-import { Connection, Model } from 'mongoose';
+import { Connection, Model, Types } from 'mongoose';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
 import { ProjectFilterInput } from './dto/project-filter.input';
 import * as XLSX from 'xlsx';
 import * as fs from 'fs';
 import * as path from 'path';
+import { MasterDevelopment } from 'src/masterdevelopment/schema/master-development.schema';
+import { SubDevelopment } from 'src/subdevelopment/schema/subdevelopment.schema';
 
 const EXPECTED_HEADERS = [
   'Commission  %',
@@ -42,21 +44,36 @@ const EXPECTED_HEADERS = [
   'Project Name',
 ];
 
-// Utility to convert header to camelCase
-const toCamelCase = (str: string): string =>
-  str
-    .replace(/\n/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim()
-    .replace(/(?:^\w|[A-Z]|\b\w)/g, (word, index) =>
-      index === 0 ? word.toLowerCase() : word.toUpperCase(),
-    )
-    .replace(/\s+/g, '');
+const test = [
+  {
+    'Commission \r\n%': 20,
+    'Project \r\nQuality': 'A',
+    'Construction\nStatus': 30,
+    'Launch \nDate': '2025-14-06',
+    'Completion Date': '2025-14-06',
+    'Sales \nStatus': 'Pending',
+    'Down \nPayment': 20,
+    'During \nConstruction': 50,
+    'Upon \nCompletion': 80,
+    'Post \nHandover ': 20,
+    'Listing \nDate': '2025-14-06',
+    'Property \nType\n1': 'Shops',
+    'Property \r\nType\r\n3': 'Offices',
+    'Project \nHeight': 200,
+    'Master \nDevelopment': 'Downtown Burj Khalifa',
+    'Sub \nDevelopment': '3sfscs',
+    'Project Name': 'zain',
+  },
+];
 
 @Injectable()
 export class ProjectService {
   constructor(
     @InjectModel(Project.name) private projectModel: Model<ProjectDocument>,
+    @InjectModel(MasterDevelopment.name)
+    private masterDevelopment: Model<MasterDevelopment>,
+    @InjectModel(SubDevelopment.name)
+    private subDevelopment: Model<SubDevelopment>,
     @InjectModel(Inventory.name)
     private inventoryModel: Model<InventoryDocument>,
     @InjectConnection() private readonly connection: Connection,
@@ -710,209 +727,347 @@ export class ProjectService {
     }
   }
 
+  toCamelCase(str: string): string {
+    return str
+      .replace(/(?:^\w|[A-Z]|\b\w)/g, (word, index) =>
+        index === 0 ? word.toLowerCase() : word.toUpperCase(),
+      )
+      .replace(/\s+/g, '')
+      .replace(/-/g, '');
+  }
+  
   async importExcelFile(filePath: string): Promise<any> {
     try {
+      // Read and parse Excel file
       const fileBuffer = fs.readFileSync(filePath);
       const workbook = XLSX.read(fileBuffer, { type: 'buffer' });
       const sheetName = workbook.SheetNames[0];
       const sheet = workbook.Sheets[sheetName];
-
-      // Convert sheet to JSON with headers as keys (default header: 0)
       const jsonData = XLSX.utils.sheet_to_json(sheet, { header: 0 });
-      console.log(jsonData);
+      // const jsonData = test;
 
-      // Clean headers (strip out \n and extra spaces)
-      const cleanHeaders = Object.keys(jsonData[0]).map(
-        (header: string) => header.replace(/\n/g, ' ').trim(), // Remove newlines and trim spaces
+      // Clean headers
+      const cleanHeaders = Object.keys(jsonData[0]).map((header: string) =>
+        this.toCamelCase(header.replace(/[\r\n\s]+/g, ' ').trim()),
       );
 
-      // Check if cleaned headers match the expected headers
-      const headersMatch = EXPECTED_HEADERS.every(
-        (expected, idx) => expected === cleanHeaders[idx],
+      console.log('Cleaned Headers: ', cleanHeaders);
+
+      // Extract all unique master and sub developments from the file
+      const masterDevSet = new Set<string>();
+      const subDevSet = new Set<string>();
+      const projectNamesSet = new Set<string>(); // For tracking project names in the file
+
+      jsonData.forEach((row: any) => {
+        const masterDevIndex = cleanHeaders.indexOf('masterDevelopment');
+        const subDevIndex = cleanHeaders.indexOf('subDevelopment');
+        const projectNameIndex = cleanHeaders.indexOf('projectName');
+
+        if (masterDevIndex !== -1) {
+          const devName = row[Object.keys(row)[masterDevIndex]]
+            ?.toString()
+            .trim();
+          if (devName) masterDevSet.add(devName);
+        }
+
+        if (subDevIndex !== -1) {
+          const subDevName = row[Object.keys(row)[subDevIndex]]
+            ?.toString()
+            .trim();
+          if (subDevName) subDevSet.add(subDevName);
+        }
+
+        if (projectNameIndex !== -1) {
+          const projectName = row[Object.keys(row)[projectNameIndex]]
+            ?.toString()
+            .trim();
+          if (projectName) projectNamesSet.add(projectName);
+        }
+      });
+
+      const masterDevelopmentsInFile = Array.from(masterDevSet);
+      const subDevelopmentsInFile = Array.from(subDevSet);
+      const projectNamesInFile = Array.from(projectNamesSet);
+
+      // Check against database for existing projects
+      const existingProjects = await this.projectModel
+        .find({
+          projectName: { $in: projectNamesInFile },
+        })
+        .select('projectName')
+        .lean();
+
+      const existingProjectNames = existingProjects.map(
+        (proj) => proj.projectName,
+      );
+      const duplicateProjectsInFile = projectNamesInFile.filter((name) =>
+        existingProjectNames.includes(name),
       );
 
-      if (!headersMatch) {
-        return {
-          success: false,
-          message: 'Uploaded file headers do not match the required format.',
-          expectedHeaders: EXPECTED_HEADERS,
-          fileHeaders: cleanHeaders,
-        };
+      if (duplicateProjectsInFile.length > 0) {
+        console.log(
+          'Duplicate projects found in database:',
+          duplicateProjectsInFile,
+        );
       }
 
-      // Initialize a set to track duplicate project names
-      const projectNamesSet = new Set<string>();
+      // Check against database and get IDs and details for developments
+      const [existingMasterDevs, existingSubDevs] = await Promise.all([
+        this.masterDevelopment
+          .find({
+            developmentName: { $in: masterDevelopmentsInFile },
+          })
+          .select('developmentName _id')
+          .lean(),
+        this.subDevelopment
+          .find({
+            subDevelopment: { $in: subDevelopmentsInFile },
+          })
+          .select(
+            'subDevelopment plotNumber plotHeight plotPermission plotSizeSqFt plotBUASqFt plotStatus buaAreaSqFt _id',
+          )
+          .lean(),
+      ]);
 
-      // Update rows with valid commission value and valid project quality values
-      const updatedRows = jsonData
-        .map((row: any) => {
-          // Commission value check
-          if (typeof row[cleanHeaders['Commission  %']] !== 'number') {
-            row[cleanHeaders['Commission  %']] = 0;
-          }
+      // Create mappings
+      const masterDevIdMap = new Map<string, Types.ObjectId>();
+      const subDevDetailsMap = new Map<string, any>();
 
-          // Date conversion: Convert serial date to formatted date string (yyyy-MM-dd)
-          const dateColumns = [
-            'Launch  Date',
-            'Completion Date',
-            'Listing  Date',
-          ]; // List your date columns here
-          dateColumns.forEach((columnName) => {
-            const columnIndex = cleanHeaders.indexOf(columnName);
-            if (columnIndex !== -1 && row[cleanHeaders[columnIndex]]) {
-              // Convert the serial number to a formatted date string (yyyy-MM-dd)
-              const dateValue = row[cleanHeaders[columnName]];
-              const formattedDate = XLSX.utils.format_cell({
-                t: 'n',
-                v: dateValue,
-              }); // Use format_cell for conversion
+      existingMasterDevs.forEach((dev) => {
+        masterDevIdMap.set(dev.developmentName, dev._id as Types.ObjectId);
+      });
 
-              // Ensure we are formatting correctly
-              const dateObject = new Date(formattedDate);
-              const dateString = dateObject.toISOString().split('T')[0]; // Get the date in yyyy-MM-dd format
-              row[cleanHeaders[columnName]] = dateString;
-            }
+      existingSubDevs.forEach((dev) => {
+        subDevDetailsMap.set(dev.subDevelopment, {
+          _id: dev._id as Types.ObjectId,
+          plotNumber: dev.plotNumber || '',
+          plotHeight: dev.plotHeight || 0,
+          plotPermission: dev.plotPermission || ['Pending'],
+          plotSizeSqFt: dev.plotSizeSqFt || 0,
+          plotBUASqFt: dev.plotBUASqFt || 0,
+          plotStatus: dev.plotStatus || '',
+          buaAreaSqFt: dev.buaAreaSqFt || 0,
+        });
+      });
+
+      const invalidMasterDevs = masterDevelopmentsInFile.filter(
+        (dev) => !masterDevIdMap.has(dev),
+      );
+
+      const invalidSubDevs = subDevelopmentsInFile.filter(
+        (dev) => !subDevDetailsMap.has(dev),
+      );
+
+      // Log invalid developments
+      if (invalidMasterDevs.length > 0) {
+        console.log('Invalid master developments:', invalidMasterDevs);
+      }
+      if (invalidSubDevs.length > 0) {
+        console.log('Invalid sub developments:', invalidSubDevs);
+      }
+
+      // Process rows
+      const processedProjectNames = new Set<string>();
+      const validRows = [];
+
+      for (const rawRow of jsonData) {
+        try {
+          // Create clean row object
+          const cleanRow: any = {};
+          cleanHeaders.forEach((cleanHeader, index) => {
+            const originalHeader = Object.keys(rawRow)[index];
+            const value = rawRow[originalHeader];
+            cleanRow[cleanHeader] =
+              value !== null && value !== undefined
+                ? value.toString().trim()
+                : '';
           });
 
-          // Trim and ensure valid "Project Quality" value (Randomly choose if invalid)
-          let projectQuality = (
-            row[cleanHeaders['Project  Quality']] || ''
-          ).trim();
+          // Skip if project name is duplicate in database
+          if (existingProjectNames.includes(cleanRow.projectName)) {
+            console.log(
+              `Skipping row - Project already exists in database: ${cleanRow.projectName}`,
+            );
+            continue;
+          }
+
+          // Get master development name
+          const masterDevName = cleanRow.masterDevelopment;
+
+          // Skip if master development is invalid
+          if (!masterDevIdMap.has(masterDevName)) {
+            console.log(
+              `Skipping row - Invalid master development: ${masterDevName}`,
+            );
+            continue;
+          }
+
+          // Replace name with ID
+          cleanRow.masterDevelopment = masterDevIdMap.get(masterDevName);
+
+          // Process sub development
+          const subDevName = cleanRow.subDevelopment;
+          if (subDevName) {
+            if (subDevDetailsMap.has(subDevName)) {
+              const subDevDetails = subDevDetailsMap.get(subDevName);
+              // Add sub development ID
+              cleanRow.subDevelopment = subDevDetails._id;
+
+              // Add plot details
+              cleanRow.plot = {
+                plotNumber: subDevDetails.plotNumber,
+                plotHeight: subDevDetails.plotHeight,
+                plotPermission: subDevDetails.plotPermission,
+                plotSizeSqFt: subDevDetails.plotSizeSqFt,
+                plotBUASqFt: subDevDetails.plotBUASqFt,
+                plotStatus: subDevDetails.plotStatus,
+                buaAreaSqFt: subDevDetails.buaAreaSqFt,
+              };
+            } else {
+              // Sub development not found - use default values
+              cleanRow.subDevelopment = null;
+              cleanRow.plot = {
+                plotNumber: '',
+                plotHeight: 0,
+                plotPermission: ['Pending'],
+                plotSizeSqFt: 0,
+                plotBUASqFt: 0,
+                plotStatus: '',
+                buaAreaSqFt: 0,
+              };
+            }
+          } else {
+            // No sub development provided - use default values
+            cleanRow.subDevelopment = null;
+            cleanRow.plot = {
+              plotNumber: '',
+              plotHeight: 0,
+              plotPermission: ['Pending'],
+              plotSizeSqFt: 0,
+              plotBUASqFt: 0,
+              plotStatus: '',
+              buaAreaSqFt: 0,
+            };
+          }
+
+          // Commission value
+          if (cleanRow.commission && isNaN(Number(cleanRow.commission))) {
+            cleanRow.commission = 0;
+          }
+
+          // Date conversion
+          const dateColumns = ['launchDate', 'completionDate', 'listingDate'];
+          for (const column of dateColumns) {
+            if (cleanRow[column]) {
+              const dateParts = cleanRow[column].split('-');
+              if (dateParts.length === 3) {
+                const [year, day, month] = dateParts;
+                const dateStr = `${year}-${month}-${day}`;
+                const dateObj = new Date(dateStr);
+
+                if (!isNaN(dateObj.getTime())) {
+                  cleanRow[column] = dateObj.toISOString().split('T')[0];
+                } else {
+                  cleanRow[column] = null;
+                }
+              }
+            }
+          }
+
+          // Project Quality
           const validQualityValues = ['A', 'B', 'C'];
-          if (!validQualityValues.includes(projectQuality)) {
-            projectQuality =
+          if (!validQualityValues.includes(cleanRow.projectQuality)) {
+            cleanRow.projectQuality =
               validQualityValues[
                 Math.floor(Math.random() * validQualityValues.length)
               ];
           }
-          row[cleanHeaders['Project  Quality']] = projectQuality;
 
-          // Validate "Construction Status", "Down Payment", "During Construction", "Upon Completion", "Post Handover"
-          const columnsToCheck = [
-            'Construction Status',
-            'Down  Payment',
-            'During  Construction',
-            'Upon  Completion',
-            'Post  Handover',
+          // Numeric fields
+          const numericColumns = [
+            'constructionStatus',
+            'downPayment',
+            'duringConstruction',
+            'uponCompletion',
+            'postHandover',
+            'projectHeight',
           ];
-
-          columnsToCheck.forEach((columnName) => {
-            const columnIndex = cleanHeaders.indexOf(columnName);
-            if (columnIndex !== -1) {
-              const columnValue = (row[cleanHeaders[columnIndex]] || '').trim();
-
-              // If the column value is not a number, set it to 0
-              if (isNaN(Number(columnValue))) {
-                row[cleanHeaders[columnName]] = 0;
-              } else {
-                row[cleanHeaders[columnName]] = Number(columnValue);
-              }
+          for (const column of numericColumns) {
+            if (cleanRow[column]) {
+              cleanRow[column] = isNaN(Number(cleanRow[column]))
+                ? 0
+                : Number(cleanRow[column]);
             }
-          });
+          }
 
-          // Check if 'Sales Status' exists, if not set to 'Pending'
-          const salesStatusIndex = cleanHeaders.indexOf('Sales  Status');
-          if (salesStatusIndex !== -1) {
-            let salesStatus = (
-              row[cleanHeaders[salesStatusIndex]] || ''
-            ).trim();
-            if (!salesStatus) {
-              salesStatus = 'Pending';
-            }
-            row[cleanHeaders[salesStatusIndex]] = salesStatus;
-          } else {
+          // Sales Status
+          if (!cleanRow.salesStatus) {
+            cleanRow.salesStatus = 'Pending';
+          }
+
+          // Property Types
+          const propertyTypeColumns = cleanHeaders.filter((header) =>
+            header.startsWith('propertyType'),
+          );
+          const propertyTypeValues = propertyTypeColumns
+            .map((col) => cleanRow[col]?.toString().trim() || '')
+            .filter(Boolean);
+
+          if (propertyTypeValues.length === 0) {
+            console.log('Skipping row - No property types provided');
+            continue;
+          }
+
+          cleanRow.propertyType = propertyTypeValues;
+          propertyTypeColumns.forEach((col) => delete cleanRow[col]);
+
+          // Validate required fields
+          if (!cleanRow.projectName) {
+            console.log('Skipping row - Missing project name');
+            continue;
+          }
+
+          // Check for duplicate project names within the file
+          if (processedProjectNames.has(cleanRow.projectName)) {
+            console.log(
+              `Duplicate project name in file: ${cleanRow.projectName}`,
+            );
             return {
               success: false,
-              message: '"Sales Status" column is missing from the file.',
+              message: `Duplicate project name found in file: ${cleanRow.projectName}`,
             };
           }
+          processedProjectNames.add(cleanRow.projectName);
 
-          // Property Type check - Ensure at least one Property Type is provided
-          const propertyTypeColumns = [
-            'Property  Type 1',
-            'Property  Type 2',
-            'Property  Type 3',
-            'Property  Type 4',
-            'Property  Type 5',
-          ];
-
-          // Check if at least one property type field is filled
-          const propertyTypeValues = propertyTypeColumns.map((columnName) =>
-            (row[cleanHeaders.indexOf(columnName)] || '').trim(),
-          );
-          const validPropertyTypes = propertyTypeValues.filter(
-            (value) => value,
-          );
-
-          // If no property types are provided, skip this row
-          if (validPropertyTypes.length === 0) {
-            return null; // This will exclude the row from the final data
-          }
-
-          // Create a propertyType array with the valid property types
-          row['propertyType'] = validPropertyTypes.slice(0, 1); // Limit to 1 value in the array
-
-          // Project Height: Ensure it's a number, if not, set to 0
-          const projectHeightIndex = cleanHeaders.indexOf('Project  Height');
-          if (projectHeightIndex !== -1) {
-            const heightValue = (
-              row[cleanHeaders[projectHeightIndex]] || ''
-            ).trim();
-            row[cleanHeaders[projectHeightIndex]] = isNaN(Number(heightValue))
-              ? 0
-              : Number(heightValue);
-          }
-
-          // Master Development: Ensure it's provided, if not, skip the row
-          const masterDevelopmentIndex = cleanHeaders.indexOf(
-            'Master  Development',
-          );
-          if (
-            masterDevelopmentIndex === -1 ||
-            !row[cleanHeaders[masterDevelopmentIndex]]?.trim()
-          ) {
-            return null; // Skip the row if Master Development is missing or empty
-          }
-
-          // Project Name: Ensure it's provided, and check for duplicates
-          const projectNameIndex = cleanHeaders.indexOf('Project Name');
-          if (projectNameIndex !== -1) {
-            let projectName = (
-              row[cleanHeaders[projectNameIndex]] || ''
-            ).trim();
-
-            // If Project Name is empty, skip this row
-            if (!projectName) {
-              return null; // This will exclude the row from the final data
-            }
-
-            // Check for duplicates
-            if (projectNamesSet.has(projectName)) {
-              return {
-                success: false,
-                message: `Duplicate projectName found in the file: "${projectName}"`,
-              };
-            }
-
-            // Add the project name to the set
-            projectNamesSet.add(projectName);
-          }
-
-          return row; // Return the updated row
-        })
-        .filter((row) => row !== null); // Filter out rows that are null (Master Development missing or Project Name missing)
+          validRows.push(cleanRow);
+        } catch (rowError) {
+          console.error('Error processing row:', rowError);
+        }
+      }
 
       return {
         success: true,
-        data: updatedRows, // Return the updated data with valid property types
+        data: validRows,
+        invalidMasterDevelopments: invalidMasterDevs,
+        invalidSubDevelopments: invalidSubDevs,
+        duplicateProjects: duplicateProjectsInFile,
+        message:
+          invalidMasterDevs.length > 0 ||
+          invalidSubDevs.length > 0 ||
+          duplicateProjectsInFile.length > 0
+            ? `Some issues found: 
+             Missing master developments: ${invalidMasterDevs.join(', ')}
+             Missing sub developments: ${invalidSubDevs.join(', ')}
+             Duplicate projects: ${duplicateProjectsInFile.join(', ')}`
+            : 'All data validated successfully',
       };
     } catch (error: any) {
       return {
         success: false,
-        message:
-          error?.message || 'Unexpected error occurred while reading the file.',
+        message: error?.message || 'Error processing Excel file',
       };
     } finally {
+      // Clean up file
       if (fs.existsSync(filePath)) {
         try {
           fs.unlinkSync(filePath);
