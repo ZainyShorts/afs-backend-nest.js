@@ -20,24 +20,26 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 const EXPECTED_HEADERS = [
-  'Property \nType\n1',
-  'Property \nType\n2',
-  'Property \nType\n3',
-  'Property \nType\n4',
-  'Property \nType\n5',
-  'Project \nHeight',
-  'Sub \nDevelopment',
-  'Project Name',
-  'Commission \n%',
-  'Project \nQuality',
-  'Constructio \nStatus',
-  'Launch \nDate',
+  'Commission  %',
+  'Project  Quality',
+  'Construction Status',
+  'Launch  Date',
   'Completion Date',
-  'Sales \nStatus',
-  'Down \nPayment',
-  'During \nConstruction',
-  'Upon \nCompletion',
-  'Post \nHandover',
+  'Sales  Status',
+  'Down  Payment',
+  'During  Construction',
+  'Upon  Completion',
+  'Post  Handover',
+  'Listing  Date',
+  'Property  Type 1',
+  'Property  Type 2',
+  'Property  Type 3',
+  'Property  Type 4',
+  'Property  Type 5',
+  'Project  Height',
+  'Master  Development',
+  'Sub  Development',
+  'Project Name',
 ];
 
 // Utility to convert header to camelCase
@@ -692,6 +694,22 @@ export class ProjectService {
     }
   }
 
+  async delete(id: string): Promise<void> {
+    const session = await this.connection.startSession();
+    session.startTransaction();
+    try {
+      await this.projectModel.findByIdAndDelete({ _id: id }, { session });
+      await this.inventoryModel.deleteMany({ project: id }, { session });
+      await session.commitTransaction();
+    } catch (error) {
+      await session.abortTransaction();
+      console.error('Error deleting MasterDevelopment by ID:', error);
+      throw new Error('Failed to delete MasterDevelopment');
+    } finally {
+      session.endSession();
+    }
+  }
+
   async importExcelFile(filePath: string): Promise<any> {
     try {
       const fileBuffer = fs.readFileSync(filePath);
@@ -699,35 +717,194 @@ export class ProjectService {
       const sheetName = workbook.SheetNames[0];
       const sheet = workbook.Sheets[sheetName];
 
-      const jsonData: any[][] = XLSX.utils.sheet_to_json(sheet, { header: 1 });
-      const fileHeaders = jsonData[0].map((h: any) => String(h).trim());
+      // Convert sheet to JSON with headers as keys (default header: 0)
+      const jsonData = XLSX.utils.sheet_to_json(sheet, { header: 0 });
+      console.log(jsonData);
 
+      // Clean headers (strip out \n and extra spaces)
+      const cleanHeaders = Object.keys(jsonData[0]).map(
+        (header: string) => header.replace(/\n/g, ' ').trim(), // Remove newlines and trim spaces
+      );
+
+      // Check if cleaned headers match the expected headers
       const headersMatch = EXPECTED_HEADERS.every(
-        (expected, idx) => expected === fileHeaders[idx],
+        (expected, idx) => expected === cleanHeaders[idx],
       );
 
       if (!headersMatch) {
         return {
           success: false,
           message: 'Uploaded file headers do not match the required format.',
-          expectedHeaders: sheet,
-          fileHeaders,
+          expectedHeaders: EXPECTED_HEADERS,
+          fileHeaders: cleanHeaders,
         };
       }
 
-      // Convert headers to camelCase
-      const camelCaseHeaders = fileHeaders.map(toCamelCase);
-      const rows = jsonData.slice(1).map((row: any[]) => {
-        const obj: any = {};
-        camelCaseHeaders.forEach((key, i) => {
-          obj[key] = row[i];
-        });
-        return obj;
-      });
+      // Initialize a set to track duplicate project names
+      const projectNamesSet = new Set<string>();
+
+      // Update rows with valid commission value and valid project quality values
+      const updatedRows = jsonData
+        .map((row: any) => {
+          // Commission value check
+          if (typeof row[cleanHeaders['Commission  %']] !== 'number') {
+            row[cleanHeaders['Commission  %']] = 0;
+          }
+
+          // Date conversion: Convert serial date to formatted date string (yyyy-MM-dd)
+          const dateColumns = [
+            'Launch  Date',
+            'Completion Date',
+            'Listing  Date',
+          ]; // List your date columns here
+          dateColumns.forEach((columnName) => {
+            const columnIndex = cleanHeaders.indexOf(columnName);
+            if (columnIndex !== -1 && row[cleanHeaders[columnIndex]]) {
+              // Convert the serial number to a formatted date string (yyyy-MM-dd)
+              const dateValue = row[cleanHeaders[columnName]];
+              const formattedDate = XLSX.utils.format_cell({
+                t: 'n',
+                v: dateValue,
+              }); // Use format_cell for conversion
+
+              // Ensure we are formatting correctly
+              const dateObject = new Date(formattedDate);
+              const dateString = dateObject.toISOString().split('T')[0]; // Get the date in yyyy-MM-dd format
+              row[cleanHeaders[columnName]] = dateString;
+            }
+          });
+
+          // Trim and ensure valid "Project Quality" value (Randomly choose if invalid)
+          let projectQuality = (
+            row[cleanHeaders['Project  Quality']] || ''
+          ).trim();
+          const validQualityValues = ['A', 'B', 'C'];
+          if (!validQualityValues.includes(projectQuality)) {
+            projectQuality =
+              validQualityValues[
+                Math.floor(Math.random() * validQualityValues.length)
+              ];
+          }
+          row[cleanHeaders['Project  Quality']] = projectQuality;
+
+          // Validate "Construction Status", "Down Payment", "During Construction", "Upon Completion", "Post Handover"
+          const columnsToCheck = [
+            'Construction Status',
+            'Down  Payment',
+            'During  Construction',
+            'Upon  Completion',
+            'Post  Handover',
+          ];
+
+          columnsToCheck.forEach((columnName) => {
+            const columnIndex = cleanHeaders.indexOf(columnName);
+            if (columnIndex !== -1) {
+              const columnValue = (row[cleanHeaders[columnIndex]] || '').trim();
+
+              // If the column value is not a number, set it to 0
+              if (isNaN(Number(columnValue))) {
+                row[cleanHeaders[columnName]] = 0;
+              } else {
+                row[cleanHeaders[columnName]] = Number(columnValue);
+              }
+            }
+          });
+
+          // Check if 'Sales Status' exists, if not set to 'Pending'
+          const salesStatusIndex = cleanHeaders.indexOf('Sales  Status');
+          if (salesStatusIndex !== -1) {
+            let salesStatus = (
+              row[cleanHeaders[salesStatusIndex]] || ''
+            ).trim();
+            if (!salesStatus) {
+              salesStatus = 'Pending';
+            }
+            row[cleanHeaders[salesStatusIndex]] = salesStatus;
+          } else {
+            return {
+              success: false,
+              message: '"Sales Status" column is missing from the file.',
+            };
+          }
+
+          // Property Type check - Ensure at least one Property Type is provided
+          const propertyTypeColumns = [
+            'Property  Type 1',
+            'Property  Type 2',
+            'Property  Type 3',
+            'Property  Type 4',
+            'Property  Type 5',
+          ];
+
+          // Check if at least one property type field is filled
+          const propertyTypeValues = propertyTypeColumns.map((columnName) =>
+            (row[cleanHeaders.indexOf(columnName)] || '').trim(),
+          );
+          const validPropertyTypes = propertyTypeValues.filter(
+            (value) => value,
+          );
+
+          // If no property types are provided, skip this row
+          if (validPropertyTypes.length === 0) {
+            return null; // This will exclude the row from the final data
+          }
+
+          // Create a propertyType array with the valid property types
+          row['propertyType'] = validPropertyTypes.slice(0, 1); // Limit to 1 value in the array
+
+          // Project Height: Ensure it's a number, if not, set to 0
+          const projectHeightIndex = cleanHeaders.indexOf('Project  Height');
+          if (projectHeightIndex !== -1) {
+            const heightValue = (
+              row[cleanHeaders[projectHeightIndex]] || ''
+            ).trim();
+            row[cleanHeaders[projectHeightIndex]] = isNaN(Number(heightValue))
+              ? 0
+              : Number(heightValue);
+          }
+
+          // Master Development: Ensure it's provided, if not, skip the row
+          const masterDevelopmentIndex = cleanHeaders.indexOf(
+            'Master  Development',
+          );
+          if (
+            masterDevelopmentIndex === -1 ||
+            !row[cleanHeaders[masterDevelopmentIndex]]?.trim()
+          ) {
+            return null; // Skip the row if Master Development is missing or empty
+          }
+
+          // Project Name: Ensure it's provided, and check for duplicates
+          const projectNameIndex = cleanHeaders.indexOf('Project Name');
+          if (projectNameIndex !== -1) {
+            let projectName = (
+              row[cleanHeaders[projectNameIndex]] || ''
+            ).trim();
+
+            // If Project Name is empty, skip this row
+            if (!projectName) {
+              return null; // This will exclude the row from the final data
+            }
+
+            // Check for duplicates
+            if (projectNamesSet.has(projectName)) {
+              return {
+                success: false,
+                message: `Duplicate projectName found in the file: "${projectName}"`,
+              };
+            }
+
+            // Add the project name to the set
+            projectNamesSet.add(projectName);
+          }
+
+          return row; // Return the updated row
+        })
+        .filter((row) => row !== null); // Filter out rows that are null (Master Development missing or Project Name missing)
 
       return {
         success: true,
-        data: rows,
+        data: updatedRows, // Return the updated data with valid property types
       };
     } catch (error: any) {
       return {
@@ -743,211 +920,6 @@ export class ProjectService {
           console.error('Error deleting file:', unlinkErr);
         }
       }
-    }
-  }
-
-  // async importExcelFile(filePath: string): Promise<any> {
-  //   // const EXPECTED_HEADERS = [
-  //   //   'Country',
-  //   //   'City',
-  //   //   'Road \nLocation',
-  //   //   'Development\n Name',
-  //   //   'Location \nQuality',
-  //   //   'BUA \nArea\nSq. Ft.',
-  //   //   'Facilities \nArea\nSq. Ft.',
-  //   //   'Amenities \nArea\nSq. Ft.',
-  //   // ];
-
-  //   try {
-  //     const fileBuffer = fs.readFileSync(filePath);
-  //     const workbook = XLSX.read(fileBuffer, { type: 'buffer' });
-  //     const sheetName = workbook.SheetNames[0];
-  //     const sheet = workbook.Sheets[sheetName];
-  //     const jsonData: any[][] = XLSX.utils.sheet_to_json(sheet, { header: 1 });
-
-  //     const fileHeaders = jsonData[0].map((h: any) => String(h).trim());
-  //     // const headersMatch = EXPECTED_HEADERS.every(
-  //     //   (expected, idx) => expected === fileHeaders[idx],
-  //     // );
-
-  //     console.log(fileHeaders);
-  //     return sheet;
-
-  //     // if (!headersMatch) {
-  //     //   return {
-  //     //     success: false,
-  //     //     message: 'Uploaded file headers do not match the required format.',
-  //     //     expectedHeaders: EXPECTED_HEADERS,
-  //     //     fileHeaders,
-  //     //   };
-  //     // }
-
-  //     // Convert rows to JSON from second row onwards
-  //     // const rowData = XLSX.utils.sheet_to_json(sheet);
-
-  //     // const requiredFields = [
-  //     //   'country',
-  //     //   'city',
-  //     //   'roadLocation',
-  //     //   'developmentName',
-  //     //   'locationQuality',
-  //     //   'totalAreaSqFt',
-  //     // ];
-
-  //     // const validRows: any[] = [];
-  //     // const invalidRows: any[] = [];
-
-  //     // rowData.forEach((row: any, index: number) => {
-  //     //   const formattedRow: any = {};
-  //     //   for (const key in row) {
-  //     //     const cleanedKey = key.replace(/\n/g, '').trim();
-  //     //     const mappedKey = MasterDevelopmentheaderMapping[cleanedKey];
-  //     //     if (mappedKey) {
-  //     //       formattedRow[mappedKey] = row[key];
-  //     //     }
-  //     //   }
-
-  //     //   formattedRow.totalAreaSqFt =
-  //     //     (formattedRow.buaAreaSqFt || 0) +
-  //     //     (formattedRow.facilitiesAreaSqFt || 0) +
-  //     //     (formattedRow.amentiesAreaSqFt || 0);
-
-  //     //   const missingFields = requiredFields.filter(
-  //     //     (field) =>
-  //     //       formattedRow[field] === undefined ||
-  //     //       formattedRow[field] === null ||
-  //     //       formattedRow[field] === '',
-  //     //   );
-
-  //     //   if (missingFields.length > 0) {
-  //     //     invalidRows.push({ index, missingFields, row: formattedRow });
-  //     //     return;
-  //     //   }
-
-  //     //   validRows.push(formattedRow);
-  //     // });
-
-  //     // if (validRows.length === 0) {
-  //     //   return {
-  //     //     success: true,
-  //     //     totalEntries: rowData.length,
-  //     //     insertedEntries: 0,
-  //     //     skippedDuplicateEntries: 0,
-  //     //     skippedInvalidEntries: invalidRows.length,
-  //     //     invalidRows,
-  //     //   };
-  //     // }
-
-  //     // const allDevelopmentNames = validRows.map((row) =>
-  //     //   row.developmentName.trim(),
-  //     // );
-
-  //     // const existingDevelopments = await this.MasterDevelopmentModel.find(
-  //     //   { developmentName: { $in: allDevelopmentNames } },
-  //     //   'developmentName',
-  //     // ).lean();
-
-  //     // const existingNameSet = new Set(
-  //     //   existingDevelopments.map((r) => r.developmentName.trim()),
-  //     // );
-
-  //     // let dbDuplicates = 0;
-  //     // let fileDuplicates = 0;
-  //     // const seenDevelopmentNames = new Set<string>();
-
-  //     // const filteredData = validRows.filter((row) => {
-  //     //   const devName = row.developmentName.trim();
-  //     //   if (existingNameSet.has(devName)) {
-  //     //     dbDuplicates++;
-  //     //     return false;
-  //     //   }
-  //     //   if (seenDevelopmentNames.has(devName)) {
-  //     //     fileDuplicates++;
-  //     //     return false;
-  //     //   }
-  //     //   seenDevelopmentNames.add(devName);
-  //     //   return true;
-  //     // });
-
-  //     // const validatedRecords = filteredData.filter((dto) => {
-  //     //   const isValid = this.validateEntry(dto);
-  //     //   return isValid;
-  //     // });
-
-  //     // if (validatedRecords.length === 0) {
-  //     //   return {
-  //     //     success: true,
-  //     //     totalEntries: rowData.length,
-  //     //     insertedEntries: 0,
-  //     //     skippedDuplicateEntries: dbDuplicates + fileDuplicates,
-  //     //     skippedInvalidEntries: invalidRows.length + filteredData.length,
-  //     //     invalidRows,
-  //     //   };
-  //     // }
-
-  //     // const chunkSize = 5000;
-  //     // let insertedDataCount = 0;
-
-  //     // for (let i = 0; i < validatedRecords.length; i += chunkSize) {
-  //     //   const chunk = validatedRecords.slice(i, i + chunkSize);
-  //     //   try {
-  //     //     const chunkWithUser = chunk.map((doc) => ({
-  //     //       ...doc,
-  //     //       user: userId,
-  //     //     }));
-
-  //     //     const result = await this.MasterDevelopmentModel.insertMany(
-  //     //       chunkWithUser,
-  //     //       { ordered: false },
-  //     //     );
-
-  //     //     insertedDataCount += result.length;
-  //     //   } catch (error) {
-  //     //     console.error(`Error inserting chunk starting at index ${i}:`, error);
-  //     //   }
-  //     // }
-
-  //     // return {
-  //     //   success: true,
-  //     //   totalEntries: rowData.length,
-  //     //   insertedEntries: insertedDataCount,
-  //     //   skippedDuplicateEntries: dbDuplicates + fileDuplicates,
-  //     //   skippedInvalidEntries: invalidRows.length,
-  //     //   invalidRows,
-  //     // };
-  //   } catch (error: any) {
-  //     if (error instanceof SyntaxError || error.message.includes('Invalid')) {
-  //       throw new BadRequestException(
-  //         'File format is not correct. Missing or empty fields.',
-  //       );
-  //     }
-  //     throw new InternalServerErrorException(
-  //       error?.message || 'Internal server error occurred.',
-  //     );
-  //   } finally {
-  //     if (fs.existsSync(filePath)) {
-  //       try {
-  //         fs.unlinkSync(filePath);
-  //       } catch (unlinkErr) {
-  //         console.error('Error deleting file:', unlinkErr);
-  //       }
-  //     }
-  //   }
-  // }
-
-  async delete(id: string): Promise<void> {
-    const session = await this.connection.startSession();
-    session.startTransaction();
-    try {
-      await this.projectModel.findByIdAndDelete({ _id: id }, { session });
-      await this.inventoryModel.deleteMany({ project: id }, { session });
-      await session.commitTransaction();
-    } catch (error) {
-      await session.abortTransaction();
-      console.error('Error deleting MasterDevelopment by ID:', error);
-      throw new Error('Failed to delete MasterDevelopment');
-    } finally {
-      session.endSession();
     }
   }
 }
