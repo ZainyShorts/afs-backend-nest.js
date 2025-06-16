@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   InternalServerErrorException,
@@ -14,6 +15,41 @@ import { Connection, Model } from 'mongoose';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
 import { ProjectFilterInput } from './dto/project-filter.input';
+import * as XLSX from 'xlsx';
+import * as fs from 'fs';
+import * as path from 'path';
+
+const EXPECTED_HEADERS = [
+  'Property \nType\n1',
+  'Property \nType\n2',
+  'Property \nType\n3',
+  'Property \nType\n4',
+  'Property \nType\n5',
+  'Project \nHeight',
+  'Sub \nDevelopment',
+  'Project Name',
+  'Commission \n%',
+  'Project \nQuality',
+  'Constructio \nStatus',
+  'Launch \nDate',
+  'Completion Date',
+  'Sales \nStatus',
+  'Down \nPayment',
+  'During \nConstruction',
+  'Upon \nCompletion',
+  'Post \nHandover',
+];
+
+// Utility to convert header to camelCase
+const toCamelCase = (str: string): string =>
+  str
+    .replace(/\n/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .replace(/(?:^\w|[A-Z]|\b\w)/g, (word, index) =>
+      index === 0 ? word.toLowerCase() : word.toUpperCase(),
+    )
+    .replace(/\s+/g, '');
 
 @Injectable()
 export class ProjectService {
@@ -75,8 +111,16 @@ export class ProjectService {
         //   query['plot.plotPermission'] = { $in: filter.plotPermission };
         // }
         console.log(filter.plotPermission);
+        // if (filter.plotPermission) {
+        //   query['plot.plotPermission'] = { $in: filter.plotPermission };
+        // }
         if (filter.plotPermission) {
-          query['plot.plotPermission'] = { $in: filter.plotPermission };
+          // Guarantee we’re working with an array
+          const permissions = Array.isArray(filter.plotPermission)
+            ? filter.plotPermission // already an array
+            : [filter.plotPermission]; // wrap single value
+
+          query['plot.plotPermission'] = { $in: permissions };
         }
 
         // Other Project filters
@@ -113,7 +157,7 @@ export class ProjectService {
         }
 
         if (filter.commission) {
-          query.height = filter.commission;
+          query.commission = filter.commission;
         }
 
         if (filter.duringConstruction) {
@@ -129,9 +173,9 @@ export class ProjectService {
           console.log(query);
         }
 
-        if (filter.installmentDate) {
-          query.installmentDate = filter.installmentDate;
-        }
+        // if (filter.installmentDate) {
+        //   query.installmentDate = filter.installmentDate;
+        // }
 
         if (filter.postHandOver) {
           query.postHandOver = filter.postHandOver;
@@ -647,6 +691,249 @@ export class ProjectService {
       };
     }
   }
+
+  async importExcelFile(filePath: string): Promise<any> {
+    try {
+      const fileBuffer = fs.readFileSync(filePath);
+      const workbook = XLSX.read(fileBuffer, { type: 'buffer' });
+      const sheetName = workbook.SheetNames[0];
+      const sheet = workbook.Sheets[sheetName];
+
+      const jsonData: any[][] = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+      const fileHeaders = jsonData[0].map((h: any) => String(h).trim());
+
+      const headersMatch = EXPECTED_HEADERS.every(
+        (expected, idx) => expected === fileHeaders[idx],
+      );
+
+      if (!headersMatch) {
+        return {
+          success: false,
+          message: 'Uploaded file headers do not match the required format.',
+          expectedHeaders: sheet,
+          fileHeaders,
+        };
+      }
+
+      // Convert headers to camelCase
+      const camelCaseHeaders = fileHeaders.map(toCamelCase);
+      const rows = jsonData.slice(1).map((row: any[]) => {
+        const obj: any = {};
+        camelCaseHeaders.forEach((key, i) => {
+          obj[key] = row[i];
+        });
+        return obj;
+      });
+
+      return {
+        success: true,
+        data: rows,
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        message:
+          error?.message || 'Unexpected error occurred while reading the file.',
+      };
+    } finally {
+      if (fs.existsSync(filePath)) {
+        try {
+          fs.unlinkSync(filePath);
+        } catch (unlinkErr) {
+          console.error('Error deleting file:', unlinkErr);
+        }
+      }
+    }
+  }
+
+  // async importExcelFile(filePath: string): Promise<any> {
+  //   // const EXPECTED_HEADERS = [
+  //   //   'Country',
+  //   //   'City',
+  //   //   'Road \nLocation',
+  //   //   'Development\n Name',
+  //   //   'Location \nQuality',
+  //   //   'BUA \nArea\nSq. Ft.',
+  //   //   'Facilities \nArea\nSq. Ft.',
+  //   //   'Amenities \nArea\nSq. Ft.',
+  //   // ];
+
+  //   try {
+  //     const fileBuffer = fs.readFileSync(filePath);
+  //     const workbook = XLSX.read(fileBuffer, { type: 'buffer' });
+  //     const sheetName = workbook.SheetNames[0];
+  //     const sheet = workbook.Sheets[sheetName];
+  //     const jsonData: any[][] = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+
+  //     const fileHeaders = jsonData[0].map((h: any) => String(h).trim());
+  //     // const headersMatch = EXPECTED_HEADERS.every(
+  //     //   (expected, idx) => expected === fileHeaders[idx],
+  //     // );
+
+  //     console.log(fileHeaders);
+  //     return sheet;
+
+  //     // if (!headersMatch) {
+  //     //   return {
+  //     //     success: false,
+  //     //     message: 'Uploaded file headers do not match the required format.',
+  //     //     expectedHeaders: EXPECTED_HEADERS,
+  //     //     fileHeaders,
+  //     //   };
+  //     // }
+
+  //     // Convert rows to JSON from second row onwards
+  //     // const rowData = XLSX.utils.sheet_to_json(sheet);
+
+  //     // const requiredFields = [
+  //     //   'country',
+  //     //   'city',
+  //     //   'roadLocation',
+  //     //   'developmentName',
+  //     //   'locationQuality',
+  //     //   'totalAreaSqFt',
+  //     // ];
+
+  //     // const validRows: any[] = [];
+  //     // const invalidRows: any[] = [];
+
+  //     // rowData.forEach((row: any, index: number) => {
+  //     //   const formattedRow: any = {};
+  //     //   for (const key in row) {
+  //     //     const cleanedKey = key.replace(/\n/g, '').trim();
+  //     //     const mappedKey = MasterDevelopmentheaderMapping[cleanedKey];
+  //     //     if (mappedKey) {
+  //     //       formattedRow[mappedKey] = row[key];
+  //     //     }
+  //     //   }
+
+  //     //   formattedRow.totalAreaSqFt =
+  //     //     (formattedRow.buaAreaSqFt || 0) +
+  //     //     (formattedRow.facilitiesAreaSqFt || 0) +
+  //     //     (formattedRow.amentiesAreaSqFt || 0);
+
+  //     //   const missingFields = requiredFields.filter(
+  //     //     (field) =>
+  //     //       formattedRow[field] === undefined ||
+  //     //       formattedRow[field] === null ||
+  //     //       formattedRow[field] === '',
+  //     //   );
+
+  //     //   if (missingFields.length > 0) {
+  //     //     invalidRows.push({ index, missingFields, row: formattedRow });
+  //     //     return;
+  //     //   }
+
+  //     //   validRows.push(formattedRow);
+  //     // });
+
+  //     // if (validRows.length === 0) {
+  //     //   return {
+  //     //     success: true,
+  //     //     totalEntries: rowData.length,
+  //     //     insertedEntries: 0,
+  //     //     skippedDuplicateEntries: 0,
+  //     //     skippedInvalidEntries: invalidRows.length,
+  //     //     invalidRows,
+  //     //   };
+  //     // }
+
+  //     // const allDevelopmentNames = validRows.map((row) =>
+  //     //   row.developmentName.trim(),
+  //     // );
+
+  //     // const existingDevelopments = await this.MasterDevelopmentModel.find(
+  //     //   { developmentName: { $in: allDevelopmentNames } },
+  //     //   'developmentName',
+  //     // ).lean();
+
+  //     // const existingNameSet = new Set(
+  //     //   existingDevelopments.map((r) => r.developmentName.trim()),
+  //     // );
+
+  //     // let dbDuplicates = 0;
+  //     // let fileDuplicates = 0;
+  //     // const seenDevelopmentNames = new Set<string>();
+
+  //     // const filteredData = validRows.filter((row) => {
+  //     //   const devName = row.developmentName.trim();
+  //     //   if (existingNameSet.has(devName)) {
+  //     //     dbDuplicates++;
+  //     //     return false;
+  //     //   }
+  //     //   if (seenDevelopmentNames.has(devName)) {
+  //     //     fileDuplicates++;
+  //     //     return false;
+  //     //   }
+  //     //   seenDevelopmentNames.add(devName);
+  //     //   return true;
+  //     // });
+
+  //     // const validatedRecords = filteredData.filter((dto) => {
+  //     //   const isValid = this.validateEntry(dto);
+  //     //   return isValid;
+  //     // });
+
+  //     // if (validatedRecords.length === 0) {
+  //     //   return {
+  //     //     success: true,
+  //     //     totalEntries: rowData.length,
+  //     //     insertedEntries: 0,
+  //     //     skippedDuplicateEntries: dbDuplicates + fileDuplicates,
+  //     //     skippedInvalidEntries: invalidRows.length + filteredData.length,
+  //     //     invalidRows,
+  //     //   };
+  //     // }
+
+  //     // const chunkSize = 5000;
+  //     // let insertedDataCount = 0;
+
+  //     // for (let i = 0; i < validatedRecords.length; i += chunkSize) {
+  //     //   const chunk = validatedRecords.slice(i, i + chunkSize);
+  //     //   try {
+  //     //     const chunkWithUser = chunk.map((doc) => ({
+  //     //       ...doc,
+  //     //       user: userId,
+  //     //     }));
+
+  //     //     const result = await this.MasterDevelopmentModel.insertMany(
+  //     //       chunkWithUser,
+  //     //       { ordered: false },
+  //     //     );
+
+  //     //     insertedDataCount += result.length;
+  //     //   } catch (error) {
+  //     //     console.error(`Error inserting chunk starting at index ${i}:`, error);
+  //     //   }
+  //     // }
+
+  //     // return {
+  //     //   success: true,
+  //     //   totalEntries: rowData.length,
+  //     //   insertedEntries: insertedDataCount,
+  //     //   skippedDuplicateEntries: dbDuplicates + fileDuplicates,
+  //     //   skippedInvalidEntries: invalidRows.length,
+  //     //   invalidRows,
+  //     // };
+  //   } catch (error: any) {
+  //     if (error instanceof SyntaxError || error.message.includes('Invalid')) {
+  //       throw new BadRequestException(
+  //         'File format is not correct. Missing or empty fields.',
+  //       );
+  //     }
+  //     throw new InternalServerErrorException(
+  //       error?.message || 'Internal server error occurred.',
+  //     );
+  //   } finally {
+  //     if (fs.existsSync(filePath)) {
+  //       try {
+  //         fs.unlinkSync(filePath);
+  //       } catch (unlinkErr) {
+  //         console.error('Error deleting file:', unlinkErr);
+  //       }
+  //     }
+  //   }
+  // }
 
   async delete(id: string): Promise<void> {
     const session = await this.connection.startSession();

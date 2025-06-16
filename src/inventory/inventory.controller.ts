@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   DefaultValuePipe,
@@ -77,5 +78,23 @@ export class InventoryController {
   ): Promise<ResponseDto> {
     console.log('import');
     return this.inventoryService.import(file.path);
+  }
+
+  @Delete('plan')
+  async deletePlan(@Body() body: any) {
+    const { docId, type } = body;
+    if (!docId || !type) {
+      throw new BadRequestException('docId and type are required');
+    }
+    return this.inventoryService.deletePlan(docId, type);
+  }
+
+  @Post('plan')
+  async addPlan(@Body() body: any) {
+    const { docId, type, data } = body;
+    if (!docId || !type || !data) {
+      throw new BadRequestException('docId, type and data are required');
+    }
+    return this.inventoryService.addPlan(docId, type, data);
   }
 }

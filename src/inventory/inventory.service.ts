@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import {
+  BadRequestException,
   HttpException,
   HttpStatus,
   Injectable,
@@ -18,6 +19,7 @@ import { InventoryFilterInput } from './dto/inventoryFilterInput';
 import { Project } from 'src/project/schema/project.schema';
 import { SubDevelopment } from 'src/subdevelopment/schema/subdevelopment.schema';
 import { MasterDevelopment } from 'src/masterdevelopment/schema/master-development.schema';
+import { chooseContentTypeForSingleResultResponse } from '@apollo/server/dist/esm/ApolloServer';
 
 @Injectable()
 export class InventoryService {
@@ -33,7 +35,36 @@ export class InventoryService {
   async create(dto: CreateInventorytDto): Promise<Inventory> {
     try {
       console.log(dto);
-      const created = new this.inventoryModel(dto);
+      const created = new this.inventoryModel({
+        ...dto,
+        paymentPlan1: {
+          developerPrice:
+            Array.isArray(dto.paymentPlan1) && dto.paymentPlan1.length === 0
+              ? 0
+              : Array.isArray(dto.paymentPlan1) && dto.paymentPlan1[0]
+                ? dto.paymentPlan1[0]['developerPrice'] || 0
+                : 0,
+          plan: [],
+        },
+        paymentPlan2: {
+          developerPrice:
+            Array.isArray(dto.paymentPlan2) && dto.paymentPlan2.length === 0
+              ? 0
+              : Array.isArray(dto.paymentPlan2) && dto.paymentPlan2[0]
+                ? dto.paymentPlan2[0]['developerPrice'] || 0
+                : 0,
+          plan: [],
+        },
+        paymentPlan3: {
+          developerPrice:
+            Array.isArray(dto.paymentPlan3) && dto.paymentPlan3.length === 0
+              ? 0
+              : Array.isArray(dto.paymentPlan3) && dto.paymentPlan3[0]
+                ? dto.paymentPlan3[0]['developerPrice'] || 0
+                : 0,
+          plan: [],
+        },
+      });
       return await created.save();
     } catch (error) {
       // Throw Internal Server Error
@@ -59,6 +90,71 @@ export class InventoryService {
     } catch (error) {
       throw new InternalServerErrorException(
         error.message || 'Failed to delete record',
+      );
+    }
+  }
+
+  async deletePlan(docId: string, type: string, index?: number) {
+    const document = await this.inventoryModel.findById(docId);
+    if (!document) throw new NotFoundException('Inventory not found');
+
+    if (!['paymentPlan1', 'paymentPlan2', 'paymentPlan3'].includes(type)) {
+      throw new NotFoundException('Invalid plan type');
+    }
+
+    if (index === undefined) {
+      // Empty entire plan list
+      document[type] = [];
+    } else {
+      // Remove specific index from the plan list
+      if (!document[type][index]) {
+        throw new NotFoundException(`Plan at index ${index} not found`);
+      }
+      document[type].splice(index, 1);
+    }
+
+    await document.save();
+    return { message: 'Plan updated successfully', updated: document[type] };
+  }
+
+  async addPlan(
+    docId: string,
+    type: 'paymentPlan1' | 'paymentPlan2' | 'paymentPlan3',
+    newPlan: any[],
+  ) {
+    try {
+      const document = await this.inventoryModel.findById(docId);
+      if (!document) {
+        throw new NotFoundException('Inventory not found');
+      }
+
+      console.log(type);
+      console.log('newPlan', newPlan);
+      console.log('document', document);
+
+      if (!document[type] || typeof document[type] !== 'object') {
+        throw new BadRequestException(`Invalid payment plan type: ${type}`);
+      }
+
+      // Sort by date ascending
+      const sortedPlan = newPlan.sort(
+        (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
+      );
+
+      // Replace the plan
+      document[type].plan = sortedPlan;
+
+      console.log(document);
+
+      // 🟡 Force Mongoose to detect changes to nested path
+      document.markModified(`${type}.plan`);
+
+      await document.save();
+      return document[type];
+    } catch (error) {
+      console.error('Error updating payment plan:', error);
+      throw new InternalServerErrorException(
+        error?.message || 'Failed to update payment plan',
       );
     }
   }
@@ -667,7 +763,265 @@ export class InventoryService {
     }
   }
 
+  // async import(filePath: string): Promise<any> {
+  //   try {
+  //     const fileBuffer = fs.readFileSync(filePath);
+  //     const workbook = xlsx.read(fileBuffer, { type: 'buffer' });
+
+  //     const sheetName = workbook.SheetNames[0];
+  //     const sheetData = xlsx.utils.sheet_to_json(workbook.Sheets[sheetName]);
+  //     const projectNamelist: string[] = [];
+  //     console.log('records length ', sheetData.length);
+  //     const toCamelCase = (str: string) =>
+  //       str
+  //         .replace(/\s(.)/g, (match) => match.toUpperCase())
+  //         .replace(/\s/g, '')
+  //         .replace(/^(.)/, (match) => match.toLowerCase());
+
+  //     const formattedSheetData = sheetData.map((row: any) => {
+  //       const newRow: any = {};
+  //       Object.keys(row).forEach((key) => {
+  //         let camelKey = toCamelCase(key);
+
+  //         // Special case for 'plotSizeSq.Ft.'
+  //         if (camelKey === 'plotSizeSq.Ft.') {
+  //           camelKey = 'plotSizeSqFt';
+  //           newRow[camelKey] = row[key];
+  //           return;
+  //         }
+
+  //         if (camelKey === 'bUASq.Ft.') {
+  //           camelKey = 'bUASqFt';
+  //           newRow[camelKey] = row[key];
+  //           return;
+  //         }
+
+  //         if (camelKey === 'no.OfBedRooms') {
+  //           camelKey = 'noOfBedRooms';
+  //           newRow[camelKey] = row[key];
+  //           return;
+  //         }
+
+  //         if (camelKey === 'purpose') {
+  //           camelKey = 'unitPurpose';
+  //           newRow[camelKey] = row[key];
+  //           return;
+  //         }
+
+  //         if (camelKey === 'unitView') {
+  //           const unitViewList = row[key];
+  //           if (unitViewList.includes(',')) {
+  //             const list = unitViewList.split(',');
+  //             newRow[camelKey] = list;
+  //             return;
+  //           } else {
+  //             newRow[camelKey] = [row[key]];
+  //             return;
+  //           }
+  //         }
+
+  //         newRow[camelKey] = row[key];
+  //       });
+  //       return newRow;
+  //     });
+
+  //     // console.log(formattedSheetData);
+
+  //     // return formattedSheetData;
+  //     console.log(`Rows extracted from Excel: ${formattedSheetData.length}`);
+
+  //     const insertion = [];
+
+  //     for (const [index, data] of formattedSheetData.entries()) {
+  //       // Validate required fields
+
+  //       if (!data.unitNumber) {
+  //         return {
+  //           success: false,
+  //           msg: `Missing value of Unit Number row: ${index}`,
+  //         };
+  //       }
+
+  //       if (!data.unitPurpose) {
+  //         return {
+  //           success: false,
+  //           msg: `Missing value of Unit Purpose row: ${index}`,
+  //         };
+  //       }
+
+  //       if (data.plotSizeSqFt && typeof data.plotSizeSqFt == 'string') {
+  //         return {
+  //           success: false,
+  //           msg: `Invalid type of Plot Size SqFt row: ${index}`,
+  //         };
+  //       }
+
+  //       if (data.plotSizeSqFt && typeof data.plotSizeSqFt == 'string') {
+  //         return {
+  //           success: false,
+  //           msg: `Invalid type of Plot Size SqFt row: ${index}`,
+  //         };
+  //       }
+
+  //       if (data.BuaSqFt && typeof data.BuaSqFt == 'string') {
+  //         return {
+  //           success: false,
+  //           msg: `Invalid type of BuaSqFt row: ${index}`,
+  //         };
+  //       }
+
+  //       if (data.noOfBedRooms) {
+  //         const randomDigit = Math.floor(Math.random() * 3) + 1;
+  //         data.noOfBedRooms = randomDigit;
+  //       } else {
+  //         data.noOfBedRooms = 1;
+  //       }
+
+  //       if (data.noOfBedRooms && typeof data.noOfBedRooms == 'string') {
+  //         return {
+  //           success: false,
+  //           msg: `Invalid type of noOfBedRooms row: ${index}`,
+  //         };
+  //       }
+
+  //       if (data.rentalPrice && typeof data.rentalPrice == 'string') {
+  //         return {
+  //           success: false,
+  //           msg: `Invalid type of rentalPrice row: ${index}`,
+  //         };
+  //       }
+
+  //       if (data.salePrice && typeof data.salePrice == 'string') {
+  //         return {
+  //           success: false,
+  //           msg: `Invalid type of salePrice row: ${index}`,
+  //         };
+  //       }
+
+  //       if (data.originalPrice && typeof data.originalPrice == 'string') {
+  //         return {
+  //           success: false,
+  //           msg: `Invalid type of originalPrice row: ${index}`,
+  //         };
+  //       }
+
+  //       if (data.premiumAndLoss && typeof data.premiumAndLoss == 'string') {
+  //         return {
+  //           success: false,
+  //           msg: `Invalid type of premiumAndLoss row: ${index}`,
+  //         };
+  //       }
+
+  //       // Parse unitView string to array, splitting by comma if needed
+  //       let unitViewArray: string[] = [];
+  //       if (data.unitView) {
+  //         if (typeof data.unitView === 'string') {
+  //           unitViewArray = data.unitView
+  //             .split(',')
+  //             .map((v) => v.trim())
+  //             .filter(Boolean);
+  //         } else if (Array.isArray(data.unitView)) {
+  //           unitViewArray = data.unitView;
+  //         }
+  //       }
+
+  //       if (data.projectName) projectNamelist.push(data.projectName);
+
+  //       insertion.push({
+  //         projectName: data.projectName,
+  //         unitNumber: data.unitNumber,
+  //         unitHeight: data.unitHeight,
+  //         unitPurpose: data.unitPurpose,
+  //         unitInternalDesign: data.unitInternalDesign,
+  //         unitExternalDesign: data.unitExternalDesign,
+  //         plotSizeSqFt: data.plotSizeSqFt,
+  //         BuaSqFt: data.BuaSqFt,
+  //         noOfBedRooms: data.noOfBedRooms,
+  //         unitType: data.unitType,
+  //         unitView: unitViewArray,
+  //         listingDate: data.listingDate,
+  //         rentalPrice: data.rentalPrice,
+  //         salePrice: data.salePrice,
+  //         rentedAt: data.rentedAt,
+  //         rentedTill: data.rentedTill,
+  //         pruchasePrice: data.purchasePrice,
+  //         marketPrice: data.marketPrice,
+  //         askingPrice: data.askingPrice,
+  //         marketRent: data.marketRent,
+  //         askingRent: data.askingRent,
+  //         paidTODevelopers: data.paidTODevelopers,
+  //         payableTODevelopers: data.payableTODevelopers,
+  //         premiumAndLoss: data.premiumAndLoss,
+  //       });
+  //     }
+
+  //     console.log(insertion.length, 'insertion');
+
+  //     console.log(projectNamelist);
+  //     const projectsListDocument: any[] = await this.projectModel
+  //       .find({
+  //         projectName: { $in: projectNamelist },
+  //       })
+  //       .select('_id, projectName');
+  //     console.log(projectsListDocument);
+
+  //     const updatedDocumentList = [];
+  //     for (let i = 0; i < projectsListDocument.length; i++) {
+  //       for (let j = 0; j < insertion.length; j++) {
+  //         // console.log(insertion[j].projectName);
+  //         if (
+  //           insertion[j].projectName === projectsListDocument[i].projectName
+  //         ) {
+  //           const { projectName, ...obj } = insertion[j];
+  //           const data = {
+  //             ...obj,
+  //             project: projectsListDocument[i]._id,
+  //           };
+  //           updatedDocumentList.push(data);
+  //         }
+  //       }
+  //     }
+
+  //     // return updatedDocumentList;
+  //     console.log(
+  //       `Records to insert after filtering: ${updatedDocumentList.length}`,
+  //     );
+
+  //     const BATCH_SIZE = 5000;
+  //     let batchCount = 0;
+
+  //     for (let i = 0; i < updatedDocumentList.length; i += BATCH_SIZE) {
+  //       const batch = updatedDocumentList.slice(i, i + BATCH_SIZE);
+  //       await this.inventoryModel.insertMany(batch);
+  //       batchCount++;
+  //       console.log(`Inserted batch ${batchCount}, Records: ${batch.length}`);
+  //     }
+
+  //     console.log('All records inserted successfully!');
+
+  //     return {
+  //       success: true,
+  //       message: 'All records inserted successfully',
+  //     };
+  //   } catch (e) {
+  //     console.error(e);
+  //     throw new HttpException(
+  //       'Internal Server Error',
+  //       HttpStatus.INTERNAL_SERVER_ERROR,
+  //     );
+  //   } finally {
+  //     if (filePath) {
+  //       fs.unlink(filePath, (err) => {
+  //         if (err) console.error('Error deleting file:', err);
+  //       });
+  //     }
+  //   }
+  // }
+
   async import(filePath: string): Promise<any> {
+    const insertedRows: any[] = [];
+    const skippedRows: { row: any; reason: string }[] = [];
+
     try {
       const fileBuffer = fs.readFileSync(filePath);
       const workbook = xlsx.read(fileBuffer, { type: 'buffer' });
@@ -675,7 +1029,7 @@ export class InventoryService {
       const sheetName = workbook.SheetNames[0];
       const sheetData = xlsx.utils.sheet_to_json(workbook.Sheets[sheetName]);
       const projectNamelist: string[] = [];
-      console.log('records length ', sheetData.length);
+
       const toCamelCase = (str: string) =>
         str
           .replace(/\s(.)/g, (match) => match.toUpperCase())
@@ -687,149 +1041,58 @@ export class InventoryService {
         Object.keys(row).forEach((key) => {
           let camelKey = toCamelCase(key);
 
-          // Special case for 'plotSizeSq.Ft.'
-          if (camelKey === 'plotSizeSq.Ft.') {
-            camelKey = 'plotSizeSqFt';
-            newRow[camelKey] = row[key];
-            return;
-          }
-
-          if (camelKey === 'bUASq.Ft.') {
-            camelKey = 'bUASqFt';
-            newRow[camelKey] = row[key];
-            return;
-          }
-
-          if (camelKey === 'no.OfBedRooms') {
-            camelKey = 'noOfBedRooms';
-            newRow[camelKey] = row[key];
-            return;
-          }
-
-          if (camelKey === 'purpose') {
-            camelKey = 'unitPurpose';
-            newRow[camelKey] = row[key];
-            return;
-          }
+          if (camelKey === 'plotSizeSq.Ft.') camelKey = 'plotSizeSqFt';
+          if (camelKey === 'bUASq.Ft.') camelKey = 'bUASqFt';
+          if (camelKey === 'no.OfBedRooms') camelKey = 'noOfBedRooms';
+          if (camelKey === 'purpose') camelKey = 'unitPurpose';
 
           if (camelKey === 'unitView') {
-            const unitViewList = row[key];
-            if (unitViewList.includes(',')) {
-              const list = unitViewList.split(',');
-              newRow[camelKey] = list;
-              return;
-            } else {
-              newRow[camelKey] = [row[key]];
-              return;
-            }
+            newRow[camelKey] =
+              typeof row[key] === 'string'
+                ? row[key]
+                    .split(',')
+                    .map((v: string) => v.trim())
+                    .filter(Boolean)
+                : Array.isArray(row[key])
+                  ? row[key]
+                  : [];
+          } else {
+            newRow[camelKey] = row[key];
           }
-
-          newRow[camelKey] = row[key];
         });
         return newRow;
       });
 
-      // console.log(formattedSheetData);
-
-      // return formattedSheetData;
-      console.log(`Rows extracted from Excel: ${formattedSheetData.length}`);
-
       const insertion = [];
 
       for (const [index, data] of formattedSheetData.entries()) {
-        // Validate required fields
-
-        // if (!data.unitNumber) {
-        //   return {
-        //     success: false,
-        //     msg: `Missing value of Unit Number row: ${index}`,
-        //   };
-        // }
-
-        // if (!data.unitPurpose) {
-        //   return {
-        //     success: false,
-        //     msg: `Missing value of Unit Purpose row: ${index}`,
-        //   };
-        // }
-
-        // if (data.plotSizeSqFt && typeof data.plotSizeSqFt == 'string') {
-        //   return {
-        //     success: false,
-        //     msg: `Invalid type of Plot Size SqFt row: ${index}`,
-        //   };
-        // }
-
-        // if (data.plotSizeSqFt && typeof data.plotSizeSqFt == 'string') {
-        //   return {
-        //     success: false,
-        //     msg: `Invalid type of Plot Size SqFt row: ${index}`,
-        //   };
-        // }
-
-        // if (data.BuaSqFt && typeof data.BuaSqFt == 'string') {
-        //   return {
-        //     success: false,
-        //     msg: `Invalid type of BuaSqFt row: ${index}`,
-        //   };
-        // }
-
-        if (data.noOfBedRooms) {
-          const randomDigit = Math.floor(Math.random() * 3) + 1;
-          data.noOfBedRooms = randomDigit;
-        } else {
-          data.noOfBedRooms = 1;
+        if (!data.projectName || !data.unitNumber || !data.unitPurpose) {
+          skippedRows.push({ row: data, reason: 'Missing required fields' });
+          continue;
         }
 
-        // if (data.noOfBedRooms && typeof data.noOfBedRooms == 'string') {
-        //   return {
-        //     success: false,
-        //     msg: `Invalid type of noOfBedRooms row: ${index}`,
-        //   };
-        // }
-
-        // if (data.rentalPrice && typeof data.rentalPrice == 'string') {
-        //   return {
-        //     success: false,
-        //     msg: `Invalid type of rentalPrice row: ${index}`,
-        //   };
-        // }
-
-        // if (data.salePrice && typeof data.salePrice == 'string') {
-        //   return {
-        //     success: false,
-        //     msg: `Invalid type of salePrice row: ${index}`,
-        //   };
-        // }
-
-        // if (data.originalPrice && typeof data.originalPrice == 'string') {
-        //   return {
-        //     success: false,
-        //     msg: `Invalid type of originalPrice row: ${index}`,
-        //   };
-        // }
-
-        // if (data.premiumAndLoss && typeof data.premiumAndLoss == 'string') {
-        //   return {
-        //     success: false,
-        //     msg: `Invalid type of premiumAndLoss row: ${index}`,
-        //   };
-        // }
-
-        // Parse unitView string to array, splitting by comma if needed
-        let unitViewArray: string[] = [];
-        if (data.unitView) {
-          if (typeof data.unitView === 'string') {
-            unitViewArray = data.unitView
-              .split(',')
-              .map((v) => v.trim())
-              .filter(Boolean);
-          } else if (Array.isArray(data.unitView)) {
-            unitViewArray = data.unitView;
-          }
+        const numericFields = [
+          'plotSizeSqFt',
+          'BuaSqFt',
+          'noOfBedRooms',
+          'rentalPrice',
+          'salePrice',
+          'originalPrice',
+          'premiumAndLoss',
+        ];
+        const hasInvalidType = numericFields.some(
+          (field) => typeof data[field] === 'string',
+        );
+        if (hasInvalidType) {
+          skippedRows.push({ row: data, reason: 'Invalid numeric field type' });
+          continue;
         }
 
-        if (data.projectName) projectNamelist.push(data.projectName);
+        if (!data.noOfBedRooms) {
+          data.noOfBedRooms = Math.floor(Math.random() * 3) + 1;
+        }
+
+        projectNamelist.push(data.projectName);
 
         insertion.push({
           projectName: data.projectName,
@@ -842,7 +1105,7 @@ export class InventoryService {
           BuaSqFt: data.BuaSqFt,
           noOfBedRooms: data.noOfBedRooms,
           unitType: data.unitType,
-          unitView: unitViewArray,
+          unitView: data.unitView || [],
           listingDate: data.listingDate,
           rentalPrice: data.rentalPrice,
           salePrice: data.salePrice,
@@ -859,53 +1122,31 @@ export class InventoryService {
         });
       }
 
-      console.log(insertion.length, 'insertion');
-
-      console.log(projectNamelist);
-      const projectsListDocument: any[] = await this.projectModel
-        .find({
-          projectName: { $in: projectNamelist },
-        })
-        .select('_id, projectName');
-      console.log(projectsListDocument);
+      const projectsListDocument = await this.projectModel
+        .find({ projectName: { $in: projectNamelist } })
+        .select('_id projectName');
 
       const updatedDocumentList = [];
-      for (let i = 0; i < projectsListDocument.length; i++) {
-        for (let j = 0; j < insertion.length; j++) {
-          // console.log(insertion[j].projectName);
-          if (
-            insertion[j].projectName === projectsListDocument[i].projectName
-          ) {
-            const { projectName, ...obj } = insertion[j];
-            const data = {
-              ...obj,
-              project: projectsListDocument[i]._id,
-            };
-            updatedDocumentList.push(data);
+      for (const doc of projectsListDocument) {
+        for (const item of insertion) {
+          if (item.projectName === doc.get('projectName')) {
+            const { projectName, ...rest } = item;
+            updatedDocumentList.push({ ...rest, project: doc._id });
           }
         }
       }
 
-      // return updatedDocumentList;
-      console.log(
-        `Records to insert after filtering: ${updatedDocumentList.length}`,
-      );
-
       const BATCH_SIZE = 5000;
-      let batchCount = 0;
-
       for (let i = 0; i < updatedDocumentList.length; i += BATCH_SIZE) {
         const batch = updatedDocumentList.slice(i, i + BATCH_SIZE);
         await this.inventoryModel.insertMany(batch);
-        batchCount++;
-        console.log(`Inserted batch ${batchCount}, Records: ${batch.length}`);
+        insertedRows.push(...batch);
       }
-
-      console.log('All records inserted successfully!');
 
       return {
         success: true,
-        message: 'All records inserted successfully',
+        insertedCount: insertedRows.length,
+        skippedCount: skippedRows.length,
       };
     } catch (e) {
       console.error(e);

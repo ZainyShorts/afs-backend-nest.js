@@ -15,6 +15,7 @@ export class paymentPlanType {
   amount: number;
 }
 
+@Schema({ _id: false })
 export class paymentPlan {
   @Prop({ type: Number, default: 0 })
   developerPrice: number;
@@ -90,14 +91,14 @@ export class Inventory extends Document {
   @Prop({ type: Number })
   askingRent: number;
 
-  @Prop({ type: [paymentPlan] })
-  paymentPlan1: paymentPlan[];
+  @Prop({ type: paymentPlan })
+  paymentPlan1: paymentPlan;
 
-  @Prop({ type: [paymentPlan] })
-  paymentPlan2: paymentPlan[];
+  @Prop({ type: paymentPlan })
+  paymentPlan2: paymentPlan;
 
-  @Prop({ type: [paymentPlan] })
-  paymentPlan3: paymentPlan[];
+  @Prop({ type: paymentPlan })
+  paymentPlan3: paymentPlan;
 
   @Prop({ type: [String] })
   pictures: string[];

@@ -64,7 +64,7 @@ export class SubDevelopmentService {
         }
       }
 
-      const created = new this.subDevelopmentModel({ ...dto, userId });
+      const created = new this.subDevelopmentModel({ ...dto, user: userId });
       return await created.save();
     } catch (error) {
       console.log(error);

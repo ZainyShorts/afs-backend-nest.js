@@ -10,7 +10,7 @@ export class ProjectFilterInput {
   salesStatus?: string;
   percentOfConstruction?: number;
   uponCompletion?: string;
-  installmentDate?: string;
+  // installmentDate?: string;
   postHandOver?: string;
   startDate?: string;
   endDate?: string;

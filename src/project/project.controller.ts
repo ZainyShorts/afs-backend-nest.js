@@ -11,12 +11,19 @@ import {
   InternalServerErrorException,
   Patch,
   Delete,
+  UseInterceptors,
+  UploadedFile,
 } from '@nestjs/common';
 import { ProjectService } from './project.service';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { Project } from './schema/project.schema';
 import { UpdateProjectDto } from './dto/update-project.dto';
 import { ProjectFilterInput } from './dto/project-filter.input';
+import { FileInterceptor } from '@nestjs/platform-express';
+import {
+  multerOptionsForXlxs,
+  UploadedFileType,
+} from 'utils/multer/multer.config';
 
 @Controller('project')
 export class ProjectController {
@@ -55,6 +62,12 @@ export class ProjectController {
   ): Promise<Project> {
     const populateFields = populate ? populate.split(',') : [];
     return await this.projectService.findOne(id, populateFields);
+  }
+
+  @Post('import')
+  @UseInterceptors(FileInterceptor('file', multerOptionsForXlxs))
+  import(@UploadedFile() file: UploadedFileType) {
+    return this.projectService.importExcelFile(file.path);
   }
 
   @Patch(':id')

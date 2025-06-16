@@ -1,4 +1,3 @@
-import { paymentPlan, paymentPlanType } from './../schema/inventory.schema';
 import {
   IsString,
   IsNumber,
@@ -124,17 +123,15 @@ export class CreateInventorytDto {
   @IsString()
   payableTODevelopers?: string;
 
-  @Field(() => [paymentPlan], { nullable: true })
+  @Field(() => Number, { nullable: true })
   @IsOptional()
-  @IsString()
-  paymentPlan1?: paymentPlanType[];
-  @Field(() => [paymentPlan], { nullable: true })
-  @IsOptional()
-  @IsString()
-  paymentPlan2?: paymentPlanType[];
+  paymentPlan1?: number;
 
-  @Field(() => [paymentPlan], { nullable: true })
+  @Field(() => Number, { nullable: true })
   @IsOptional()
-  @IsString()
-  paymentPlan3?: paymentPlanType[];
+  paymentPlan2?: number;
+
+  @Field(() => Number, { nullable: true })
+  @IsOptional()
+  paymentPlan3?: number;
 }
