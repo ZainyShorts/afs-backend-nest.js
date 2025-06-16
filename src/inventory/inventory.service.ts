@@ -5,6 +5,7 @@ import {
   Injectable,
   InternalServerErrorException,
   NotFoundException,
+  BadRequestException,
 } from '@nestjs/common';
 import { HttpStatusCode } from 'axios';
 import { InjectModel } from '@nestjs/mongoose';
@@ -18,6 +19,8 @@ import { InventoryFilterInput } from './dto/inventoryFilterInput';
 import { Project } from 'src/project/schema/project.schema';
 import { SubDevelopment } from 'src/subdevelopment/schema/subdevelopment.schema';
 import { MasterDevelopment } from 'src/masterdevelopment/schema/master-development.schema';
+import { InventoryHeaderMapping } from 'utils/methods/methods';
+import { UnitPurpose, unitType } from 'utils/enum/enums';
 
 @Injectable()
 export class InventoryService {
@@ -711,256 +714,202 @@ export class InventoryService {
   }
 
   async import(filePath: string): Promise<any> {
+    const EXPECTED_HEADERS = [
+      'Project',
+      'Unit Number',
+      'Unit Height',
+      'Unit Internal Design',
+      'Unit External Design',
+      'Plot Size Sq. Ft.',
+      'BUA Sq. Ft.',
+      'No. of Bedrooms',
+      'Unit Type',
+      'Rented At',
+      'Rented Till',
+      'Unit View',
+      'Unit Purpose',
+      'Listing Date',
+      'Purchase Price',
+      'Market Price',
+      'Asking Price',
+      'Premium and Loss',
+      'Market Rent',
+      'Asking Rent',
+      'Paid to Developers',
+      'Payable to Developers'
+    ];
+
     try {
       const fileBuffer = fs.readFileSync(filePath);
       const workbook = xlsx.read(fileBuffer, { type: 'buffer' });
-
       const sheetName = workbook.SheetNames[0];
-      const sheetData = xlsx.utils.sheet_to_json(workbook.Sheets[sheetName]);
-      const projectNamelist: string[] = [];
-      console.log('records length ', sheetData.length);
-      const toCamelCase = (str: string) =>
-        str
-          .replace(/\s(.)/g, (match) => match.toUpperCase())
-          .replace(/\s/g, '')
-          .replace(/^(.)/, (match) => match.toLowerCase());
+      const sheet = workbook.Sheets[sheetName];
+      const jsonData: any[][] = xlsx.utils.sheet_to_json(sheet, { header: 1 });
 
-      const formattedSheetData = sheetData.map((row: any) => {
-        const newRow: any = {};
-        Object.keys(row).forEach((key) => {
-          let camelKey = toCamelCase(key);
-
-          // Special case for 'plotSizeSq.Ft.'
-          if (camelKey === 'plotSizeSq.Ft.') {
-            camelKey = 'plotSizeSqFt';
-            newRow[camelKey] = row[key];
-            return;
-          }
-
-          if (camelKey === 'bUASq.Ft.') {
-            camelKey = 'bUASqFt';
-            newRow[camelKey] = row[key];
-            return;
-          }
-
-          if (camelKey === 'no.OfBedRooms') {
-            camelKey = 'noOfBedRooms';
-            newRow[camelKey] = row[key];
-            return;
-          }
-
-          if (camelKey === 'purpose') {
-            camelKey = 'unitPurpose';
-            newRow[camelKey] = row[key];
-            return;
-          }
-
-          if (camelKey === 'unitView') {
-            const unitViewList = row[key];
-            if (unitViewList.includes(',')) {
-              const list = unitViewList.split(',');
-              newRow[camelKey] = list;
-              return;
-            } else {
-              newRow[camelKey] = [row[key]];
-              return;
-            }
-          }
-
-          newRow[camelKey] = row[key];
-        });
-        return newRow;
-      });
-
-      // console.log(formattedSheetData);
-
-      // return formattedSheetData;
-      console.log(`Rows extracted from Excel: ${formattedSheetData.length}`);
-
-      const insertion = [];
-
-      for (const [index, data] of formattedSheetData.entries()) {
-        // Validate required fields
-
-        // if (!data.unitNumber) {
-        //   return {
-        //     success: false,
-        //     msg: `Missing value of Unit Number row: ${index}`,
-        //   };
-        // }
-
-        // if (!data.unitPurpose) {
-        //   return {
-        //     success: false,
-        //     msg: `Missing value of Unit Purpose row: ${index}`,
-        //   };
-        // }
-
-        // if (data.plotSizeSqFt && typeof data.plotSizeSqFt == 'string') {
-        //   return {
-        //     success: false,
-        //     msg: `Invalid type of Plot Size SqFt row: ${index}`,
-        //   };
-        // }
-
-        // if (data.plotSizeSqFt && typeof data.plotSizeSqFt == 'string') {
-        //   return {
-        //     success: false,
-        //     msg: `Invalid type of Plot Size SqFt row: ${index}`,
-        //   };
-        // }
-
-        // if (data.BuaSqFt && typeof data.BuaSqFt == 'string') {
-        //   return {
-        //     success: false,
-        //     msg: `Invalid type of BuaSqFt row: ${index}`,
-        //   };
-        // }
-
-        if (data.noOfBedRooms) {
-          const randomDigit = Math.floor(Math.random() * 3) + 1;
-          data.noOfBedRooms = randomDigit;
-        } else {
-          data.noOfBedRooms = 1;
-        }
-
-        // if (data.noOfBedRooms && typeof data.noOfBedRooms == 'string') {
-        //   return {
-        //     success: false,
-        //     msg: `Invalid type of noOfBedRooms row: ${index}`,
-        //   };
-        // }
-
-        // if (data.rentalPrice && typeof data.rentalPrice == 'string') {
-        //   return {
-        //     success: false,
-        //     msg: `Invalid type of rentalPrice row: ${index}`,
-        //   };
-        // }
-
-        // if (data.salePrice && typeof data.salePrice == 'string') {
-        //   return {
-        //     success: false,
-        //     msg: `Invalid type of salePrice row: ${index}`,
-        //   };
-        // }
-
-        // if (data.originalPrice && typeof data.originalPrice == 'string') {
-        //   return {
-        //     success: false,
-        //     msg: `Invalid type of originalPrice row: ${index}`,
-        //   };
-        // }
-
-        // if (data.premiumAndLoss && typeof data.premiumAndLoss == 'string') {
-        //   return {
-        //     success: false,
-        //     msg: `Invalid type of premiumAndLoss row: ${index}`,
-        //   };
-        // }
-
-        // Parse unitView string to array, splitting by comma if needed
-        let unitViewArray: string[] = [];
-        if (data.unitView) {
-          if (typeof data.unitView === 'string') {
-            unitViewArray = data.unitView
-              .split(',')
-              .map((v) => v.trim())
-              .filter(Boolean);
-          } else if (Array.isArray(data.unitView)) {
-            unitViewArray = data.unitView;
-          }
-        }
-
-        if (data.projectName) projectNamelist.push(data.projectName);
-
-        insertion.push({
-          projectName: data.projectName,
-          unitNumber: data.unitNumber,
-          unitHeight: data.unitHeight,
-          unitPurpose: data.unitPurpose,
-          unitInternalDesign: data.unitInternalDesign,
-          unitExternalDesign: data.unitExternalDesign,
-          plotSizeSqFt: data.plotSizeSqFt,
-          BuaSqFt: data.BuaSqFt,
-          noOfBedRooms: data.noOfBedRooms,
-          unitType: data.unitType,
-          unitView: unitViewArray,
-          listingDate: data.listingDate,
-          rentalPrice: data.rentalPrice,
-          salePrice: data.salePrice,
-          rentedAt: data.rentedAt,
-          rentedTill: data.rentedTill,
-          pruchasePrice: data.purchasePrice,
-          marketPrice: data.marketPrice,
-          askingPrice: data.askingPrice,
-          marketRent: data.marketRent,
-          askingRent: data.askingRent,
-          paidTODevelopers: data.paidTODevelopers,
-          payableTODevelopers: data.payableTODevelopers,
-          premiumAndLoss: data.premiumAndLoss,
-        });
-      }
-
-      console.log(insertion.length, 'insertion');
-
-      console.log(projectNamelist);
-      const projectsListDocument: any[] = await this.projectModel
-        .find({
-          projectName: { $in: projectNamelist },
-        })
-        .select('_id, projectName');
-      console.log(projectsListDocument);
-
-      const updatedDocumentList = [];
-      for (let i = 0; i < projectsListDocument.length; i++) {
-        for (let j = 0; j < insertion.length; j++) {
-          // console.log(insertion[j].projectName);
-          if (
-            insertion[j].projectName === projectsListDocument[i].projectName
-          ) {
-            const { projectName, ...obj } = insertion[j];
-            const data = {
-              ...obj,
-              project: projectsListDocument[i]._id,
-            };
-            updatedDocumentList.push(data);
-          }
-        }
-      }
-
-      // return updatedDocumentList;
-      console.log(
-        `Records to insert after filtering: ${updatedDocumentList.length}`,
+      const fileHeaders = jsonData[0].map((h: any) => String(h).trim());
+      const headersMatch = EXPECTED_HEADERS.every(
+        (expected, idx) => expected === fileHeaders[idx],
       );
 
-      const BATCH_SIZE = 5000;
-      let batchCount = 0;
-
-      for (let i = 0; i < updatedDocumentList.length; i += BATCH_SIZE) {
-        const batch = updatedDocumentList.slice(i, i + BATCH_SIZE);
-        await this.inventoryModel.insertMany(batch);
-        batchCount++;
-        console.log(`Inserted batch ${batchCount}, Records: ${batch.length}`);
+      if (!headersMatch) {
+        return {
+          success: false,
+          message: 'Uploaded file headers do not match the required format.',
+          expectedHeaders: EXPECTED_HEADERS,
+          fileHeaders,
+        };
       }
 
-      console.log('All records inserted successfully!');
+      // Convert rows to JSON from second row onwards
+      const rowData = xlsx.utils.sheet_to_json(sheet);
+
+      const requiredFields = [
+        'project',
+        'unitNumber',
+        'unitType',
+        'unitPurpose',
+      ];
+
+      const validRows: any[] = [];
+      const invalidRows: any[] = [];
+
+      rowData.forEach((row: any, index: number) => {
+        const formattedRow: any = {};
+        for (const key in row) {
+          const cleanedKey = key.replace(/\n/g, '').trim();
+          const mappedKey = InventoryHeaderMapping[cleanedKey];
+          if (mappedKey) {
+            formattedRow[mappedKey] = row[key];
+          }
+        }
+
+        // Handle unitView as array if it's a string
+        if (formattedRow.unitView && typeof formattedRow.unitView === 'string') {
+          formattedRow.unitView = formattedRow.unitView.split(',').map((v: string) => v.trim());
+        }
+
+        const missingFields = requiredFields.filter(
+          (field) =>
+            formattedRow[field] === undefined ||
+            formattedRow[field] === null ||
+            formattedRow[field] === '',
+        );
+
+        if (missingFields.length > 0) {
+          invalidRows.push({ index, missingFields, row: formattedRow });
+          return;
+        }
+
+        // Validate unitType and unitPurpose
+        if (!Object.values(unitType).includes(formattedRow.unitType)) {
+          invalidRows.push({
+            index,
+            error: `Invalid unitType: ${formattedRow.unitType}`,
+            row: formattedRow,
+          });
+          return;
+        }
+
+        if (!Object.values(UnitPurpose).includes(formattedRow.unitPurpose)) {
+          invalidRows.push({
+            index,
+            error: `Invalid unitPurpose: ${formattedRow.unitPurpose}`,
+            row: formattedRow,
+          });
+          return;
+        }
+
+        validRows.push(formattedRow);
+      });
+
+      if (validRows.length === 0) {
+        return {
+          success: true,
+          totalEntries: rowData.length,
+          insertedEntries: 0,
+          skippedDuplicateEntries: 0,
+          skippedInvalidEntries: invalidRows.length,
+          invalidRows,
+        };
+      }
+
+      // Check for existing units in the same project
+      const projectUnitPairs = validRows.map((row) => ({
+        project: row.project,
+        unitNumber: row.unitNumber.trim(),
+      }));
+
+      const existingUnits = await this.inventoryModel.find({
+        $or: projectUnitPairs,
+      });
+
+      const existingSet = new Set(
+        existingUnits.map(
+          (unit) => `${unit.project.toString()}-${unit.unitNumber}`,
+        ),
+      );
+
+      let duplicates = 0;
+      const filteredData = validRows.filter((row) => {
+        const key = `${row.project}-${row.unitNumber.trim()}`;
+        if (existingSet.has(key)) {
+          duplicates++;
+          return false;
+        }
+        existingSet.add(key);
+        return true;
+      });
+
+      if (filteredData.length === 0) {
+        return {
+          success: true,
+          totalEntries: rowData.length,
+          insertedEntries: 0,
+          skippedDuplicateEntries: duplicates,
+          skippedInvalidEntries: invalidRows.length,
+          invalidRows,
+        };
+      }
+
+      const chunkSize = 5000;
+      let insertedDataCount = 0;
+
+      for (let i = 0; i < filteredData.length; i += chunkSize) {
+        const chunk = filteredData.slice(i, i + chunkSize);
+        try {
+          const result = await this.inventoryModel.insertMany(chunk, {
+            ordered: false,
+          });
+          insertedDataCount += result.length;
+        } catch (error) {
+          console.error(`Error inserting chunk starting at index ${i}:`, error);
+        }
+      }
 
       return {
         success: true,
-        message: 'All records inserted successfully',
+        totalEntries: rowData.length,
+        insertedEntries: insertedDataCount,
+        skippedDuplicateEntries: duplicates,
+        skippedInvalidEntries: invalidRows.length,
+        invalidRows,
       };
-    } catch (e) {
-      console.error(e);
-      throw new HttpException(
-        'Internal Server Error',
-        HttpStatus.INTERNAL_SERVER_ERROR,
+    } catch (error: any) {
+      if (error instanceof SyntaxError || error.message.includes('Invalid')) {
+        throw new BadRequestException(
+          'File format is not correct. Missing or empty fields.',
+        );
+      }
+      throw new InternalServerErrorException(
+        error?.message || 'Internal server error occurred.',
       );
     } finally {
-      if (filePath) {
-        fs.unlink(filePath, (err) => {
-          if (err) console.error('Error deleting file:', err);
-        });
+      if (fs.existsSync(filePath)) {
+        try {
+          fs.unlinkSync(filePath);
+        } catch (unlinkErr) {
+          console.error('Error deleting file:', unlinkErr);
+        }
       }
     }
   }
