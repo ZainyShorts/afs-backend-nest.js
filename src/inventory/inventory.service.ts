@@ -657,20 +657,24 @@ export class InventoryService {
     updateData: UpdateInventoryDto,
   ): Promise<any> {
     try {
-      const existingUnit = await this.inventoryModel.findOne({
-        project: updateData.project,
-        unitNumber: updateData.unitNumber,
-      });
+      // If unitNumber is being updated, check for duplicates
+      if (updateData.unitNumber) {
+        const existingUnit = await this.inventoryModel.findOne({
+          project: updateData.project,
+          unitNumber: updateData.unitNumber,
+          _id: { $ne: id }, // Exclude current document from duplicate check
+        });
 
-      if (existingUnit) {
-        console.log(
-          `Unit number ${updateData.unitNumber} already exists in this project`,
-        );
-        return {
-          success: false,
-          message: `Unit number ${updateData.unitNumber} already exists in this project`,
-          statusCode: 400,
-        };
+        if (existingUnit) {
+          console.log(
+            `Unit number ${updateData.unitNumber} already exists in this project`,
+          );
+          return {
+            success: false,
+            message: `Unit number ${updateData.unitNumber} already exists in this project`,
+            statusCode: 400,
+          };
+        }
       }
 
       const updatedProperty = await this.inventoryModel.findByIdAndUpdate(
@@ -682,27 +686,26 @@ export class InventoryService {
         },
       );
 
-      console.log(updatedProperty);
-
       if (!updatedProperty) {
         return {
           success: false,
-          msg: 'Property not found',
+          message: 'Property not found',
+          statusCode: 404,
         };
       }
 
       return {
         success: true,
-        msg: 'Property updated successfully',
+        message: 'Property updated successfully',
         data: updatedProperty,
+        statusCode: 200,
       };
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (error) {
       console.log(error);
       return {
         success: false,
-        statusCode: HttpStatusCode.InternalServerError,
-        msg: 'Failed to update property',
+        message: error?.message || 'Failed to update property',
+        statusCode: 500,
       };
     }
   }
