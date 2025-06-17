@@ -76,7 +76,7 @@ export class ProjectController {
   @Post('import')
   @UseInterceptors(FileInterceptor('file', multerOptionsForXlxs))
   import(@UploadedFile() file: UploadedFileType, @Req() req: RequestWithUser) {
-    console.log(req.user.userId);
+    // console.log(req.user.userId);
     return this.projectService.importExcelFile(file.path, req.user.userId);
   }
 

@@ -27,6 +27,10 @@ export class AwsService {
 
   async generateSignedUrl(fileName: string, contentType: string) {
     try {
+      if (!this.bucketName) {
+        throw new Error('Bucket name is not defined');
+      }
+
       const key = `${Date.now()}-${fileName}`;
 
       // Create a PutObjectCommand with the correct parameters
@@ -48,10 +52,11 @@ export class AwsService {
         },
       };
     } catch (e) {
+      console.log(e);
       return {
         success: false,
         statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-        msg: e?.error?.message || 'Error from aws server',
+        msg: e?.error?.message || 'Error from AWS server',
       };
     }
   }
