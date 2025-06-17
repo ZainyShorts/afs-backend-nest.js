@@ -16,9 +16,7 @@ import { ProjectModule } from './project/project.module';
 import { UserModule } from './user/user.module';
 import { AuthModule } from './auth/auth.module';
 import { MailModule } from './mail/mail.module';
-
-
-
+import { AwsModule } from './aws/aws.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -34,15 +32,13 @@ import { MailModule } from './mail/mail.module';
     InventoryModule,
     MasterDevelopmentModule,
     DocumentModule,
+    AwsModule,
     SubDevelopmentModule,
     ProjectModule,
     AuthModule,
     MailModule,
-
-  
   ],
   controllers: [AppController, EventsController],
   providers: [AppService, AppResolver, EventsGateway],
 })
 export class AppModule {}
-
