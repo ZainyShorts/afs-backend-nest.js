@@ -77,4 +77,3 @@ export class SubDevelopmentController {
     return this.service.remove(id);
   }
 }
-

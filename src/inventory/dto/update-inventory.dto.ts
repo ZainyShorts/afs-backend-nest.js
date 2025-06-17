@@ -1,3 +1,4 @@
+import { Field } from '@nestjs/graphql';
 import {
   IsString,
   IsNumber,
@@ -101,4 +102,16 @@ export class UpdateInventoryDto {
   @IsOptional()
   @IsString()
   payableTODevelopers?: string;
+
+  @Field(() => Number, { nullable: true })
+  @IsOptional()
+  paymentPlan1?: number;
+
+  @Field(() => Number, { nullable: true })
+  @IsOptional()
+  paymentPlan2?: number;
+
+  @Field(() => Number, { nullable: true })
+  @IsOptional()
+  paymentPlan3?: number;
 }
