@@ -3,6 +3,7 @@ import { Schema, Prop, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
 import { MasterDevelopment } from 'src/masterdevelopment/schema/master-development.schema';
 import { SubDevelopment } from 'src/subdevelopment/schema/subdevelopment.schema';
+import { User } from 'src/user/schema/user.schema';
 import {
   PlotStatus,
   ProjectQuality,
@@ -37,6 +38,9 @@ export class Plot {
 
 @Schema({ timestamps: true })
 export class Project {
+  @Prop({ type: Types.ObjectId, ref: 'User', required: true })
+  user: User;
+
   @Prop({ type: Types.ObjectId, ref: 'MasterDevelopment', required: true })
   masterDevelopment: MasterDevelopment;
 

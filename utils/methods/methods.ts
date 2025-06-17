@@ -48,3 +48,28 @@ export const SubDevelopmentheaderMapping: { [key: string]: string } = {
   'Facilities AreaSq. Ft.': 'facilitiesAreaSqFt',
   'Amenities AreaSq. Ft.': 'amentiesAreaSqFt',
 };
+
+export const InventoryHeaderMapping: { [key: string]: string } = {
+  Project: 'project',
+  'Unit Number': 'unitNumber',
+  'Unit Height': 'unitHeight',
+  'Unit Internal Design': 'unitInternalDesign',
+  'Unit External Design': 'unitExternalDesign',
+  'Plot Size Sq. Ft.': 'plotSizeSqFt',
+  'BUA Sq. Ft.': 'BuaSqFt',
+  'No. of Bedrooms': 'noOfBedRooms',
+  'Unit Type': 'unitType',
+  'Rented At': 'rentedAt',
+  'Rented Till': 'rentedTill',
+  'Unit View': 'unitView',
+  'Unit Purpose': 'unitPurpose',
+  'Listing Date': 'listingDate',
+  'Purchase Price': 'purchasePrice',
+  'Market Price': 'marketPrice',
+  'Asking Price': 'askingPrice',
+  'Premium and Loss': 'premiumAndLoss',
+  'Market Rent': 'marketRent',
+  'Asking Rent': 'askingRent',
+  'Paid to Developers': 'paidTODevelopers',
+  'Payable to Developers': 'payableTODevelopers',
+};

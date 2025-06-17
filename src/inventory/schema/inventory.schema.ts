@@ -1,6 +1,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
 import { Project } from 'src/project/schema/project.schema';
+import { User } from 'src/user/schema/user.schema';
 // import { User } from 'src/user/schema/user.schema';
 import { UnitPurpose, unitType } from 'utils/enum/enums';
 
@@ -28,8 +29,8 @@ export class paymentPlan {
   timestamps: true,
 })
 export class Inventory extends Document {
-  // @Prop({ type: Types.ObjectId, ref: 'User', required: true })
-  // user: User;
+  @Prop({ type: Types.ObjectId, ref: 'User', required: true })
+  user: User;
 
   @Prop({ type: Types.ObjectId, ref: 'Project', required: true })
   project: Project;

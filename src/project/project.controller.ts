@@ -13,6 +13,8 @@ import {
   Delete,
   UseInterceptors,
   UploadedFile,
+  UseGuards,
+  Req,
 } from '@nestjs/common';
 import { ProjectService } from './project.service';
 import { CreateProjectDto } from './dto/create-project.dto';
@@ -24,14 +26,20 @@ import {
   multerOptionsForXlxs,
   UploadedFileType,
 } from 'utils/multer/multer.config';
+import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
+import { RequestWithUser } from 'utils/interface/interfaces';
 
 @Controller('project')
 export class ProjectController {
   constructor(private readonly projectService: ProjectService) {}
 
+  @UseGuards(JwtAuthGuard)
   @Post()
-  create(@Body() createProjectDto: CreateProjectDto) {
-    return this.projectService.create(createProjectDto);
+  create(
+    @Body() createProjectDto: CreateProjectDto,
+    @Req() req: RequestWithUser,
+  ) {
+    return this.projectService.create(createProjectDto, req.user.userId);
   }
 
   @Get()
@@ -64,10 +72,12 @@ export class ProjectController {
     return await this.projectService.findOne(id, populateFields);
   }
 
+  @UseGuards(JwtAuthGuard)
   @Post('import')
   @UseInterceptors(FileInterceptor('file', multerOptionsForXlxs))
-  import(@UploadedFile() file: UploadedFileType) {
-    return this.projectService.importExcelFile(file.path);
+  import(@UploadedFile() file: UploadedFileType, @Req() req: RequestWithUser) {
+    // console.log(req.user.userId);
+    return this.projectService.importExcelFile(file.path, req.user.userId);
   }
 
   @Patch(':id')
