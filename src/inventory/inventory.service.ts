@@ -1028,6 +1028,11 @@ export class InventoryService {
             .map((v: string) => v.trim());
         }
 
+        // Handle unit number - if not provided or empty, set to "0"
+        if (!formattedRow.unitNumber || formattedRow.unitNumber === '') {
+          formattedRow.unitNumber = '0';
+        }
+
         // Calculate premium/loss if not provided
         if (formattedRow.purchasePrice && formattedRow.marketPrice) {
           if (!formattedRow.premiumAndLoss) {
@@ -1035,6 +1040,22 @@ export class InventoryService {
               Number(formattedRow.purchasePrice) -
               Number(formattedRow.marketPrice);
           }
+        }
+
+        // Validate unitType - must be in enum, skip row if not valid
+        if (!formattedRow.unitType || !Object.values(unitType).includes(formattedRow.unitType)) {
+          invalidRows.push({
+            index: index + 2, // +2 because Excel rows start at 1 and header is row 1
+            error: `Invalid unitType: ${formattedRow.unitType}. Must be one of: ${Object.values(unitType).join(', ')}`,
+            row: formattedRow,
+            errorType: 'invalid_unit_type'
+          });
+          return;
+        }
+
+        // Validate unitPurpose - if not in enum, set to "Pending"
+        if (!formattedRow.unitPurpose || !Object.values(UnitPurpose).includes(formattedRow.unitPurpose)) {
+          formattedRow.unitPurpose = 'Pending';
         }
 
         const missingFields = requiredFields.filter(
@@ -1045,25 +1066,11 @@ export class InventoryService {
         );
 
         if (missingFields.length > 0) {
-          invalidRows.push({ index, missingFields, row: formattedRow });
-          return;
-        }
-
-        // Validate unitType and unitPurpose
-        if (!Object.values(unitType).includes(formattedRow.unitType)) {
-          invalidRows.push({
-            index,
-            error: `Invalid unitType: ${formattedRow.unitType}`,
+          invalidRows.push({ 
+            index: index + 2, 
+            missingFields, 
             row: formattedRow,
-          });
-          return;
-        }
-
-        if (!Object.values(UnitPurpose).includes(formattedRow.unitPurpose)) {
-          invalidRows.push({
-            index,
-            error: `Invalid unitPurpose: ${formattedRow.unitPurpose}`,
-            row: formattedRow,
+            errorType: 'missing_fields'
           });
           return;
         }
