@@ -345,46 +345,58 @@ export class MasterDevelopmentService {
     const session = await this.connection.startSession();
     session.startTransaction();
     try {
-      await this.MasterDevelopmentModel.findOneAndDelete(
+      console.log('Starting transaction for deletion:', id);
+
+      // Delete the MasterDevelopment
+      const masterDev = await this.MasterDevelopmentModel.findOneAndDelete(
         { _id: id },
         { session },
       );
+      console.log('Deleted MasterDevelopment:', masterDev);
 
+      // Find project related to the master development
       const project = await this.ProjectModel.findOne(
         { masterDevelopment: id },
         null,
         { session },
       );
+      console.log('Found Project:', project);
 
-      await this.MasterDevelopmentModel.findOneAndDelete(
-        { _id: id },
-        { session },
-      );
-
-      await this.subDevelopmentModel.deleteMany(
+      // Delete sub-developments related to the master development
+      const subDevDeleteResult = await this.subDevelopmentModel.deleteMany(
         { masterDevelopment: id },
         { session },
       );
+      console.log('Deleted Sub-Developments:', subDevDeleteResult);
 
-      await this.ProjectModel.deleteMany(
+      // Delete projects related to the master development
+      const projectDeleteResult = await this.ProjectModel.deleteMany(
         { masterDevelopment: id },
         { session },
       );
+      console.log('Deleted Projects:', projectDeleteResult);
 
+      // If project exists, delete associated inventories
       if (project) {
-        await this.InventoryModel.deleteMany(
+        const inventoryDeleteResult = await this.InventoryModel.deleteMany(
           { project: project._id },
           { session },
         );
+        console.log('Deleted Inventories:', inventoryDeleteResult);
       }
 
+      // Commit the transaction
       await session.commitTransaction();
+      console.log('Transaction committed');
     } catch (error) {
+      // Abort transaction on error
       await session.abortTransaction();
       console.error('Error deleting MasterDevelopment by ID:', error);
       throw new Error('Failed to delete MasterDevelopment');
     } finally {
+      // End the session
       session.endSession();
+      console.log('Session ended');
     }
   }
 
@@ -455,13 +467,17 @@ export class MasterDevelopmentService {
     }
   }
 
-  // async importExcelFile(filePath: string): Promise<any> {
+  // async importExcelFile(filePath: string, userId: string): Promise<any> {
   //   try {
   //     const fileBuffer = fs.readFileSync(filePath);
   //     const workbook = XLSX.read(fileBuffer, { type: 'buffer' });
   //     const sheetName = workbook.SheetNames[0];
   //     const sheet = workbook.Sheets[sheetName];
-  //     const jsonData = XLSX.utils.sheet_to_json(sheet);
+
+  //     // Convert rows to JSON from the second row onwards
+  //     const rowData = XLSX.utils.sheet_to_json(sheet);
+
+  //     console.log('First 5 rows:', rowData.slice(0, 5));
 
   //     const requiredFields = [
   //       'country',
@@ -475,21 +491,59 @@ export class MasterDevelopmentService {
   //     const validRows: any[] = [];
   //     const invalidRows: any[] = [];
 
-  //     jsonData.forEach((row: any, index: number) => {
+  //     rowData.forEach((row: any, index: number) => {
+  //       // console.log('Raw Row:', row);
+
   //       const formattedRow: any = {};
+  //       const cleanedKeys = {};
+
+  //       // Iterate through each column and map the cleaned keys
   //       for (const key in row) {
-  //         const cleanedKey = key.replace(/\n/g, '').trim();
-  //         const mappedKey = MasterDevelopmentheaderMapping[cleanedKey];
+  //         const cleanedKey = key.replace(/\n/g, '').replace(/\./g, '').trim();
+  //         cleanedKeys[key] = cleanedKey; // For debugging
+
+  //         // First try exact mapping
+  //         let mappedKey = MasterDevelopmentheaderMapping[cleanedKey];
+
+  //         // Fallback mappings for area fields
+  //         if (!mappedKey) {
+  //           if (
+  //             cleanedKey.includes('BUAArea') ||
+  //             cleanedKey.includes('BUA Area')
+  //           ) {
+  //             mappedKey = 'buaAreaSqFt';
+  //           } else if (
+  //             cleanedKey.includes('FacilitiesArea') ||
+  //             cleanedKey.includes('Facilities Area')
+  //           ) {
+  //             mappedKey = 'facilitiesAreaSqFt';
+  //           } else if (
+  //             cleanedKey.includes('AmenitiesArea') ||
+  //             cleanedKey.includes('Amenities Area')
+  //           ) {
+  //             mappedKey = 'amentiesAreaSqFt';
+  //           }
+  //         }
+
   //         if (mappedKey) {
   //           formattedRow[mappedKey] = row[key];
   //         }
   //       }
 
-  //       formattedRow.totalAreaSqFt =
-  //         (formattedRow.buaAreaSqFt || 0) +
-  //         (formattedRow.facilitiesAreaSqFt || 0) +
-  //         (formattedRow.amentiesAreaSqFt || 0);
+  //       // console.log('Cleaned Keys Mapping:', cleanedKeys);
+  //       console.log('Formatted Row:', formattedRow);
 
+  //       // Convert area fields to numbers
+  //       const buaArea = Number(formattedRow.buaAreaSqFt) || 0;
+  //       const facilitiesArea = Number(formattedRow.facilitiesAreaSqFt) || 0;
+  //       const amenitiesArea = Number(formattedRow.amentiesAreaSqFt) || 0;
+
+  //       console.log('Area Values:', { buaArea, facilitiesArea, amenitiesArea });
+
+  //       // Calculate total area
+  //       formattedRow.totalAreaSqFt = buaArea + facilitiesArea + amenitiesArea;
+
+  //       // Check for missing required fields
   //       const missingFields = requiredFields.filter(
   //         (field) =>
   //           formattedRow[field] === undefined ||
@@ -498,24 +552,22 @@ export class MasterDevelopmentService {
   //       );
 
   //       if (missingFields.length > 0) {
-  //         console.log(
-  //           `Skipping row ${index} due to missing fields: ${missingFields.join(', ')}`,
-  //         );
-  //         invalidRows.push({ index, missingFields, row: formattedRow });
+  //         invalidRows.push({
+  //           index: index + 2, // +2 because Excel rows start at 1 and header is row 1
+  //           missingFields,
+  //           row: formattedRow,
+  //         });
   //         return;
   //       }
 
   //       validRows.push(formattedRow);
   //     });
 
-  //     console.log(`Total rows read: ${jsonData.length}`);
-  //     console.log(`Valid rows after required field check: ${validRows.length}`);
-  //     console.log(`Invalid rows count: ${invalidRows.length}`);
-
+  //     // If no valid rows, return early
   //     if (validRows.length === 0) {
   //       return {
   //         success: true,
-  //         totalEntries: jsonData.length,
+  //         totalEntries: rowData.length,
   //         insertedEntries: 0,
   //         skippedDuplicateEntries: 0,
   //         skippedInvalidEntries: invalidRows.length,
@@ -523,7 +575,7 @@ export class MasterDevelopmentService {
   //       };
   //     }
 
-  //     // Check duplicates in DB
+  //     // Check for duplicates
   //     const allDevelopmentNames = validRows.map((row) =>
   //       row.developmentName.trim(),
   //     );
@@ -555,68 +607,55 @@ export class MasterDevelopmentService {
   //       return true;
   //     });
 
-  //     console.log(
-  //       `Filtered rows after duplicate removal: ${filteredData.length}`,
-  //     );
-  //     console.log(`Duplicates skipped (DB): ${dbDuplicates}`);
-  //     console.log(`Duplicates skipped (file): ${fileDuplicates}`);
-
-  //     if (filteredData.length === 0) {
-  //       return {
-  //         success: true,
-  //         totalEntries: jsonData.length,
-  //         insertedEntries: 0,
-  //         skippedDuplicateEntries: dbDuplicates + fileDuplicates,
-  //         skippedInvalidEntries: invalidRows.length,
-  //         invalidRows,
-  //       };
-  //     }
-
-  //     // Validate entries
+  //     // Validate remaining records
   //     const validatedRecords = filteredData.filter((dto) => {
-  //       const isValid = this.validateEntry(dto);
-  //       if (!isValid) {
-  //         console.log(`Record failed validation: ${dto.developmentName}`);
-  //       }
-  //       return isValid;
+  //       return this.validateEntry(dto);
   //     });
 
-  //     console.log(
-  //       `Records after validateEntry check: ${validatedRecords.length}`,
-  //     );
-
+  //     // If no validated records, return early
   //     if (validatedRecords.length === 0) {
   //       return {
   //         success: true,
-  //         totalEntries: jsonData.length,
+  //         totalEntries: rowData.length,
   //         insertedEntries: 0,
   //         skippedDuplicateEntries: dbDuplicates + fileDuplicates,
-  //         skippedInvalidEntries: invalidRows.length + filteredData.length, // count filtered but invalid as invalid
+  //         skippedInvalidEntries:
+  //           invalidRows.length + (validRows.length - validatedRecords.length),
   //         invalidRows,
   //       };
   //     }
 
+  //     // Insert records in chunks
   //     const chunkSize = 5000;
   //     let insertedDataCount = 0;
 
   //     for (let i = 0; i < validatedRecords.length; i += chunkSize) {
   //       const chunk = validatedRecords.slice(i, i + chunkSize);
   //       try {
-  //         const result = await this.MasterDevelopmentModel.insertMany(chunk, {
-  //           ordered: false,
-  //         });
-  //         insertedDataCount += result.length;
-  //         console.log(
-  //           `Inserted chunk of ${result.length} records (index ${i} to ${i + chunk.length - 1})`,
+  //         const chunkWithUser = chunk.map((doc) => ({
+  //           ...doc,
+  //           user: userId,
+  //           createdAt: new Date(),
+  //           updatedAt: new Date(),
+  //         }));
+
+  //         const result = await this.MasterDevelopmentModel.insertMany(
+  //           chunkWithUser,
+  //           {
+  //             ordered: false,
+  //           },
   //         );
+
+  //         insertedDataCount += result.length;
   //       } catch (error) {
   //         console.error(`Error inserting chunk starting at index ${i}:`, error);
+  //         // Continue with next chunk even if one fails
   //       }
   //     }
 
   //     return {
   //       success: true,
-  //       totalEntries: jsonData.length,
+  //       totalEntries: rowData.length,
   //       insertedEntries: insertedDataCount,
   //       skippedDuplicateEntries: dbDuplicates + fileDuplicates,
   //       skippedInvalidEntries: invalidRows.length,
@@ -632,6 +671,7 @@ export class MasterDevelopmentService {
   //       error?.message || 'Internal server error occurred.',
   //     );
   //   } finally {
+  //     // Clean up uploaded file after processing
   //     if (fs.existsSync(filePath)) {
   //       try {
   //         fs.unlinkSync(filePath);
@@ -641,43 +681,18 @@ export class MasterDevelopmentService {
   //     }
   //   }
   // }
-  async importExcelFile(filePath: string, userId: string): Promise<any> {
-    const EXPECTED_HEADERS = [
-      'Country',
-      'City',
-      'Road \nLocation',
-      'Development\n Name',
-      'Location \nQuality',
-      'BUA \nArea\nSq. Ft.',
-      'Facilities \nArea\nSq. Ft.',
-      'Amenities \nArea\nSq. Ft.',
-    ];
 
+  async importExcelFile(filePath: string, userId: string): Promise<any> {
     try {
       const fileBuffer = fs.readFileSync(filePath);
       const workbook = XLSX.read(fileBuffer, { type: 'buffer' });
       const sheetName = workbook.SheetNames[0];
       const sheet = workbook.Sheets[sheetName];
-      const jsonData: any[][] = XLSX.utils.sheet_to_json(sheet, { header: 1 });
 
-      const fileHeaders = jsonData[0].map((h: any) => String(h).trim());
-      const headersMatch = EXPECTED_HEADERS.every(
-        (expected, idx) => expected === fileHeaders[idx],
-      );
-
-      console.log(fileHeaders);
-
-      if (!headersMatch) {
-        return {
-          success: false,
-          message: 'Uploaded file headers do not match the required format.',
-          expectedHeaders: EXPECTED_HEADERS,
-          fileHeaders,
-        };
-      }
-
-      // Convert rows to JSON from second row onwards
+      // Convert rows to JSON from the second row onwards
       const rowData = XLSX.utils.sheet_to_json(sheet);
+
+      console.log('First 5 rows:', rowData.slice(0, 5));
 
       const requiredFields = [
         'country',
@@ -690,22 +705,44 @@ export class MasterDevelopmentService {
 
       const validRows: any[] = [];
       const invalidRows: any[] = [];
+      const validationErrors: any[] = [];
 
       rowData.forEach((row: any, index: number) => {
         const formattedRow: any = {};
+        const cleanedKeys = {};
+
+        // Clean and map column headers
         for (const key in row) {
-          const cleanedKey = key.replace(/\n/g, '').trim();
-          const mappedKey = MasterDevelopmentheaderMapping[cleanedKey];
+          const cleanedKey = key.replace(/\n/g, '').replace(/\./g, '').trim();
+          cleanedKeys[key] = cleanedKey;
+
+          let mappedKey = MasterDevelopmentheaderMapping[cleanedKey];
+
+          // Fallback mappings for area fields
+          if (!mappedKey) {
+            if (cleanedKey.match(/BUAArea|BUA Area/i)) {
+              mappedKey = 'buaAreaSqFt';
+            } else if (cleanedKey.match(/FacilitiesArea|Facilities Area/i)) {
+              mappedKey = 'facilitiesAreaSqFt';
+            } else if (cleanedKey.match(/AmenitiesArea|Amenities Area/i)) {
+              mappedKey = 'amentiesAreaSqFt';
+            }
+          }
+
           if (mappedKey) {
             formattedRow[mappedKey] = row[key];
           }
         }
 
-        formattedRow.totalAreaSqFt =
-          (formattedRow.buaAreaSqFt || 0) +
-          (formattedRow.facilitiesAreaSqFt || 0) +
-          (formattedRow.amentiesAreaSqFt || 0);
+        // Convert area fields to numbers
+        const buaArea = Number(formattedRow.buaAreaSqFt) || 0;
+        const facilitiesArea = Number(formattedRow.facilitiesAreaSqFt) || 0;
+        const amenitiesArea = Number(formattedRow.amentiesAreaSqFt) || 0;
 
+        // Calculate total area
+        formattedRow.totalAreaSqFt = buaArea + facilitiesArea + amenitiesArea;
+
+        // Check for missing required fields
         const missingFields = requiredFields.filter(
           (field) =>
             formattedRow[field] === undefined ||
@@ -714,24 +751,49 @@ export class MasterDevelopmentService {
         );
 
         if (missingFields.length > 0) {
-          invalidRows.push({ index, missingFields, row: formattedRow });
+          invalidRows.push({
+            rowNumber: index + 2, // +2 because Excel rows start at 1 and header is row 1
+            missingFields,
+            row: formattedRow,
+            errorType: 'missing_fields',
+          });
           return;
         }
 
-        validRows.push(formattedRow);
+        // Validate the row structure
+        try {
+          if (this.validateEntry(formattedRow)) {
+            validRows.push(formattedRow);
+          } else {
+            validationErrors.push({
+              rowNumber: index + 2,
+              row: formattedRow,
+              errorType: 'validation_failed',
+            });
+          }
+        } catch (validationError) {
+          validationErrors.push({
+            rowNumber: index + 2,
+            row: formattedRow,
+            errorType: 'validation_error',
+            message: validationError.message,
+          });
+        }
       });
 
+      // Early return if no valid rows
       if (validRows.length === 0) {
         return {
           success: true,
           totalEntries: rowData.length,
           insertedEntries: 0,
           skippedDuplicateEntries: 0,
-          skippedInvalidEntries: invalidRows.length,
-          invalidRows,
+          skippedInvalidEntries: invalidRows.length + validationErrors.length,
+          invalidEntries: [...invalidRows, ...validationErrors],
         };
       }
 
+      // Check for duplicates
       const allDevelopmentNames = validRows.map((row) =>
         row.developmentName.trim(),
       );
@@ -745,59 +807,63 @@ export class MasterDevelopmentService {
         existingDevelopments.map((r) => r.developmentName.trim()),
       );
 
-      let dbDuplicates = 0;
-      let fileDuplicates = 0;
+      const duplicateEntries = [];
       const seenDevelopmentNames = new Set<string>();
-
-      const filteredData = validRows.filter((row) => {
+      const uniqueRows = validRows.filter((row) => {
         const devName = row.developmentName.trim();
+
         if (existingNameSet.has(devName)) {
-          dbDuplicates++;
+          duplicateEntries.push({
+            rowNumber: row.__rowNum__ + 2,
+            row,
+            errorType: 'duplicate_in_database',
+          });
           return false;
         }
         if (seenDevelopmentNames.has(devName)) {
-          fileDuplicates++;
+          duplicateEntries.push({
+            rowNumber: row.__rowNum__ + 2,
+            row,
+            errorType: 'duplicate_in_file',
+          });
           return false;
         }
         seenDevelopmentNames.add(devName);
         return true;
       });
 
-      const validatedRecords = filteredData.filter((dto) => {
-        const isValid = this.validateEntry(dto);
-        return isValid;
-      });
-
-      if (validatedRecords.length === 0) {
-        return {
-          success: true,
-          totalEntries: rowData.length,
-          insertedEntries: 0,
-          skippedDuplicateEntries: dbDuplicates + fileDuplicates,
-          skippedInvalidEntries: invalidRows.length + filteredData.length,
-          invalidRows,
-        };
-      }
-
+      // Insert records in chunks
       const chunkSize = 5000;
       let insertedDataCount = 0;
 
-      for (let i = 0; i < validatedRecords.length; i += chunkSize) {
-        const chunk = validatedRecords.slice(i, i + chunkSize);
+      for (let i = 0; i < uniqueRows.length; i += chunkSize) {
+        const chunk = uniqueRows.slice(i, i + chunkSize);
         try {
           const chunkWithUser = chunk.map((doc) => ({
             ...doc,
             user: userId,
+            createdAt: new Date(),
+            updatedAt: new Date(),
           }));
 
           const result = await this.MasterDevelopmentModel.insertMany(
             chunkWithUser,
             { ordered: false },
           );
-
           insertedDataCount += result.length;
         } catch (error) {
           console.error(`Error inserting chunk starting at index ${i}:`, error);
+          // Convert chunk errors to validation errors
+          if (error.writeErrors) {
+            error.writeErrors.forEach((writeError) => {
+              validationErrors.push({
+                rowNumber: i + writeError.index + 2,
+                row: chunk[writeError.index],
+                errorType: 'insert_error',
+                message: writeError.errmsg,
+              });
+            });
+          }
         }
       }
 
@@ -805,9 +871,10 @@ export class MasterDevelopmentService {
         success: true,
         totalEntries: rowData.length,
         insertedEntries: insertedDataCount,
-        skippedDuplicateEntries: dbDuplicates + fileDuplicates,
-        skippedInvalidEntries: invalidRows.length,
-        invalidRows,
+        skippedDuplicateEntries: duplicateEntries.length,
+        skippedInvalidEntries: invalidRows.length + validationErrors.length,
+        duplicateEntries,
+        invalidEntries: [...invalidRows, ...validationErrors],
       };
     } catch (error: any) {
       if (error instanceof SyntaxError || error.message.includes('Invalid')) {
@@ -819,6 +886,7 @@ export class MasterDevelopmentService {
         error?.message || 'Internal server error occurred.',
       );
     } finally {
+      // Clean up uploaded file after processing
       if (fs.existsSync(filePath)) {
         try {
           fs.unlinkSync(filePath);

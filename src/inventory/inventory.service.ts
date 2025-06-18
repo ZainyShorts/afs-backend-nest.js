@@ -37,7 +37,7 @@ export class InventoryService {
   async create(dto: CreateInventorytDto, userId: string): Promise<any> {
     try {
       console.log(userId);
-      const exists = await this.projectModel.findOne({
+      const exists = await this.inventoryModel.findOne({
         unitNumber: dto.unitNumber,
         project: dto.project,
       });
@@ -81,7 +81,10 @@ export class InventoryService {
           plan: [],
         },
       });
-      return await created.save();
+      await created.save();
+      return {
+        success: true,
+      };
     } catch (error) {
       // Throw Internal Server Error
       console.log(error);
