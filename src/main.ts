@@ -11,7 +11,12 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   // Allow all origins (for development)
   app.enableCors({
-    origin: ['http://127.0.0.1:3000', 'http://localhost:3000'],
+    origin: [
+      'http://127.0.0.1:3000',
+      'http://localhost:3000',
+      'https://dashboard-afs.vercel.app',
+      'https://afsrealestate.vercel.app',
+    ],
     credentials: true,
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     allowedHeaders:
