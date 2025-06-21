@@ -22,6 +22,8 @@ import {
 } from 'utils/multer/multer.config';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { RequestWithUser } from 'utils/interface/interfaces';
+import { Roles } from 'src/auth/roles.decorator';
+import { RolesGuard } from 'src/auth/roles.guard';
 
 @Controller('masterDevelopment')
 export class MasterDevelopmentController {
@@ -65,6 +67,8 @@ export class MasterDevelopmentController {
     return this.service.findOne(id);
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin', 'manager')
   @Delete(':id')
   delete(@Param('id') id: string) {
     return this.service.delete(id);
