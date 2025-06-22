@@ -73,3 +73,5 @@ export const InventoryHeaderMapping: { [key: string]: string } = {
   'Paid to Developers': 'paidTODevelopers',
   'Payable to Developers': 'payableTODevelopers',
 };
+
+

@@ -12,8 +12,14 @@ export class InventoryFilterInput {
   developmentName?: string;
   roadLocation?: string;
   subDevelopment?: string;
+  additionalRooms?: string[];
 
   noOfBedRooms?: {
+    min?: number;
+    max?: number;
+  };
+
+  noOfWashroom?: {
     min?: number;
     max?: number;
   };
@@ -68,8 +74,8 @@ export class InventoryFilterInput {
   endDate?: string;
 
   // paymentPlan?: {
-    paymentPlan1?: {};
-    paymentPlan2?: {};
-    paymentPlan3?: {};
+  paymentPlan1?: object;
+  paymentPlan2?: object;
+  paymentPlan3?: object;
   // };
 }

@@ -154,3 +154,16 @@ export enum UnitPurpose {
   HOLD = 'Hold',
   PENDING = 'Pending',
 }
+
+export enum RoomType {
+  MaidsRoom = 'Maid’s Room',
+  StudyOrHomeOffice = 'Study / Home Office',
+  StorageRoom = 'Storage Room',
+  LaundryRoom = 'Laundry Room',
+  PrayerRoom = 'Prayer Room',
+  DriversRoom = 'Driver’s Room',
+  CinemaRoom = 'Cinema Room',
+  PetRoom = 'Pet Room',
+  NurseryOrBabyRoom = 'Nursery / Baby Room',
+  TeenLoungeOrKidsPlayroom = "Teen Lounge / Kids' Playroom",
+}

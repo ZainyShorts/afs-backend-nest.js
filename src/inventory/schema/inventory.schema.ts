@@ -102,6 +102,12 @@ export class Inventory extends Document {
   paymentPlan3: paymentPlan;
 
   @Prop({ type: [String] })
+  additionalRooms: string[];
+
+  @Prop({ type: Number, default: 0 })
+  noOfWashroom: number;
+
+  @Prop({ type: [String] })
   pictures: string[];
 
   @Prop({ type: Number })

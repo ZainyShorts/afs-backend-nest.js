@@ -134,4 +134,12 @@ export class CreateInventorytDto {
   @Field(() => Number, { nullable: true })
   @IsOptional()
   paymentPlan3?: number;
+
+  @Field(() => String)
+  @IsEnum(unitType)
+  additionalRooms: string;
+
+  @Field(() => Number, { nullable: true })
+  @IsOptional()
+  noOfWashroom?: number;
 }
