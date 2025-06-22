@@ -285,12 +285,17 @@ export class InventoryService {
         // Import or define additionalRooms and RoomType at the top of the file:
         // import { additionalRooms, RoomType } from 'utils/enum/enums';
         if (filter.additionalRooms) {
+          console.log(filter.additionalRooms);
+          
           for (const amenity of filter.additionalRooms) {
             if (!Object.values(RoomType).includes(amenity as RoomType)) {
               throw new BadRequestException(`Invalid room type: ${amenity}.`);
             }
           }
+        
+          query.additionalRooms = { $all: filter.additionalRooms };
         }
+        
 
         if (filter.askingPriceRange) {
           query.askingPrice = {};
@@ -782,8 +787,7 @@ export class InventoryService {
         const formattedRow: any = {};
         let rowErrors: string[] = [];
 
-        // console.log(`\n--- [Import Service] Processing row ${rowNumber} ---`); // Keep if needed for previous verbose output
-        // console.log(`[Import Service] Raw row data from Excel for row ${rowNumber}:`, JSON.stringify(row)); // Keep if needed
+
 
         for (const key in row) {
           const cleanedKey = String(key).replace(/\r?\n|\r/g, '').trim();
@@ -791,10 +795,8 @@ export class InventoryService {
           if (mappedKey) {
             formattedRow[mappedKey] = row[key];
           } else {
-            // console.warn(`[Import Service] Row ${rowNumber}: Unmapped header '${cleanedKey}' found with value: '${row[key]}'`); // Keep if needed
           }
         }
-        // console.log(`[Import Service] Row ${rowNumber}: Partially formatted row (before specific logic):`, JSON.stringify(formattedRow)); // Keep if needed
 
         const originalProjectName = row['Project'];
         if (!originalProjectName) {
@@ -828,9 +830,7 @@ export class InventoryService {
           const market = Number(formattedRow.marketPrice);
           if (!isNaN(purchase) && !isNaN(market)) {
             formattedRow.premiumAndLoss = purchase - market;
-            // console.log(`[Import Service] Row ${rowNumber}: Calculated premiumAndLoss: ${formattedRow.premiumAndLoss}`); // Keep if needed
           } else {
-            // console.warn(`[Import Service] Row ${rowNumber}: Could not calculate premiumAndLoss, purchasePrice or marketPrice is not a valid number. P: '${formattedRow.purchasePrice}', M: '${formattedRow.marketPrice}'`); // Keep if needed
           }
         }
 
@@ -839,7 +839,6 @@ export class InventoryService {
         }
 
         if (!Object.values(UnitPurpose).includes(formattedRow.unitPurpose)) {
-            // console.warn(`[Import Service] Row ${rowNumber}: Invalid unitPurpose '${formattedRow.unitPurpose}'. Defaulting to 'Pending'.`); // Keep if needed
             formattedRow.unitPurpose = 'Pending';
         }
 
@@ -848,7 +847,6 @@ export class InventoryService {
             const parsed = Number(washroomVal);
             formattedRow.noOfWashroom = isNaN(parsed) ? null : parsed;
             if (isNaN(parsed)) {
-                // console.warn(`[Import Service] Row ${rowNumber}: 'No. of Washroom' value '${washroomVal}' is not a number. Setting to null.`); // Keep if needed
             }
         } else {
             formattedRow.noOfWashroom = null;
@@ -860,7 +858,6 @@ export class InventoryService {
           formattedRow.addionalRooms3,
           formattedRow.addionalRooms4
         ].filter((val) => typeof val === 'string' && val.trim() !== '');
-        // console.log(`[Import Service] Row ${rowNumber}: Final 'additionalRooms' array:`, formattedRow.additionalRooms); // Keep if needed
 
 
         ['addionalRooms', 'addionalRooms2', 'addionalRooms3', 'addionalRooms4'].forEach((k) => {
@@ -883,7 +880,6 @@ export class InventoryService {
           console.warn(`[Import Service] Row ${rowNumber} is INVALID: ${rowErrors.join('; ')}`);
         } else {
           validRows.push(formattedRow);
-          // console.log(`[Import Service] Row ${rowNumber} is VALID. Formatted row (final):`, JSON.stringify(formattedRow)); // Keep if needed
         }
       });
 
@@ -921,13 +917,12 @@ export class InventoryService {
           console.warn(`[Import Service] Skipping duplicate (before insert): Row #${idx+1} (Unit: ${row.unitNumber}) for Project ID '${row.project}'`);
           return false;
         }
-        existingSet.add(key); // Add to set to prevent duplicates within the current import batch
+        existingSet.add(key); 
         return true;
       });
 
       console.log(`[Import Service] Filtered out ${duplicates} duplicate entries. Remaining for insertion: ${filteredData.length}`);
 
-      // --- NEW: Log all fields of each row before insertion ---
       if (filteredData.length > 0) {
           console.log('\n--- [Import Service] Final data rows ready for insertion (excluding duplicates) ---');
           filteredData.forEach((row, index) => {
