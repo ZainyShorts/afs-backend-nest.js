@@ -28,6 +28,8 @@ import { Inventory } from './schema/inventory.schema';
 import { InventoryService } from './inventory.service';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { RequestWithUser } from 'utils/interface/interfaces';
+import { Roles } from 'src/auth/roles.decorator';
+import { RolesGuard } from 'src/auth/roles.guard';
 
 @Controller('inventory')
 export class InventoryController {
@@ -66,7 +68,8 @@ export class InventoryController {
   async findOne(@Param('id') id: string): Promise<Inventory> {
     return await this.inventoryService.findOne(id);
   }
-
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin', 'manager')
   @Delete(':id')
   async deleteProperty(@Param('id') id: string) {
     return this.inventoryService.delete(id);

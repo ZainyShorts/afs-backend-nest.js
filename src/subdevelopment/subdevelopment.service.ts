@@ -5,7 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { SubDevelopment } from './schema/subdevelopment.schema';
 import { CreateSubDevelopmentDto } from './dto/create-sub-development.dto';
 import { SubDevelopmentFilterInput } from './dto/sub-development-filter.input';
@@ -256,22 +256,50 @@ export class SubDevelopmentService {
   }
 
   async remove(id: string): Promise<any> {
+    const session = await this.connection.startSession();
+    session.startTransaction();
     try {
-      const result = await this.subDevelopmentModel
-        .findByIdAndDelete(id)
-        .exec();
+      // Support both string and ObjectId for subDevelopment field
+      const subDevId = Types.ObjectId.isValid(id) ? new Types.ObjectId(id) : id;
+      // Find all projects where subDevelopment matches as string or ObjectId
+      const projects = await this.ProjectModel.find({
+        $or: [
+          { subDevelopment: id },
+          { subDevelopment: subDevId },
+        ],
+      }, null, { session });
+      const projectIds = projects.map((p) => p._id.toString());
+
+      // Delete all inventories for these projects
+      await this.InventoryModel.deleteMany({ project: { $in: projectIds } }, { session });
+
+      // Delete all projects for this subDevelopment
+      await this.ProjectModel.deleteMany({
+        $or: [
+          { subDevelopment: id },
+          { subDevelopment: subDevId },
+        ],
+      }, { session });
+
+      // Delete the subDevelopment itself
+      const result = await this.subDevelopmentModel.findByIdAndDelete(id, { session });
       if (!result) {
         throw new NotFoundException(`SubDevelopment with id ${id} not found`);
       }
+
+      await session.commitTransaction();
       return {
         success: true,
-        message: `SubDevelopment with id ${id} has been deleted.`,
+        message: `SubDevelopment with id ${id} and its related projects and inventories have been deleted.`,
       };
     } catch (error) {
+      await session.abortTransaction();
       console.error('Error deleting SubDevelopment:', error);
       throw new InternalServerErrorException(
-        error?.message || 'An error occurred while deleting SubDevelopment.',
+        error?.message || 'An error occurred while deleting SubDevelopment and related data.'
       );
+    } finally {
+      session.endSession();
     }
   }
 

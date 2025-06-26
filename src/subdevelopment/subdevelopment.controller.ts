@@ -1,3 +1,4 @@
+import { AuthGuard } from '@nestjs/passport';
 import {
   Controller,
   Get,
@@ -22,6 +23,8 @@ import {
 } from 'utils/multer/multer.config';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { RequestWithUser } from 'utils/interface/interfaces';
+import { Roles } from 'src/auth/roles.decorator';
+import { RolesGuard } from 'src/auth/roles.guard';
 
 @Controller('subDevelopment')
 export class SubDevelopmentController {
@@ -72,6 +75,8 @@ export class SubDevelopmentController {
     return this.service.update(id, dto);
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin', 'manager')
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.service.remove(id);
