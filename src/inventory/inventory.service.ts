@@ -286,16 +286,15 @@ export class InventoryService {
         // import { additionalRooms, RoomType } from 'utils/enum/enums';
         if (filter.additionalRooms) {
           console.log(filter.additionalRooms);
-          
+
           for (const amenity of filter.additionalRooms) {
             if (!Object.values(RoomType).includes(amenity as RoomType)) {
               throw new BadRequestException(`Invalid room type: ${amenity}.`);
             }
           }
-        
+
           query.additionalRooms = { $all: filter.additionalRooms };
         }
-        
 
         if (filter.askingPriceRange) {
           query.askingPrice = {};
@@ -665,7 +664,7 @@ export class InventoryService {
       'Unit Purpose',
       'Listing Date',
       'Purchase Price',
-      'Market Price', 
+      'Market Price',
       'Asking Price',
       'Premium and Loss',
       'Market Rent',
@@ -680,7 +679,7 @@ export class InventoryService {
     ];
 
     const InventoryHeaderMapping: Record<string, string> = {
-      'Project': 'project',
+      Project: 'project',
       'Unit Number': 'unitNumber',
       'Unit Height': 'unitHeight',
       'Unit Internal Design': 'unitInternalDesign',
@@ -695,7 +694,7 @@ export class InventoryService {
       'Unit Purpose': 'unitPurpose',
       'Listing Date': 'listingDate',
       'Purchase Price': 'purchasePrice',
-      'Market Price': 'marketPrice', 
+      'Market Price': 'marketPrice',
       'Asking Price': 'askingPrice',
       'Premium and Loss': 'premiumAndLoss',
       'Market Rent': 'marketRent',
@@ -709,88 +708,141 @@ export class InventoryService {
       'No. of Washroom': 'noOfWashroom',
     };
 
-    console.log(`[Import Service] Starting import for file: ${filePath}, user: ${userId}`);
+    console.log(
+      `[Import Service] Starting import for file: ${filePath}, user: ${userId}`,
+    );
 
     try {
       console.log(`[Import Service] Reading file from: ${filePath}`);
       const fileBuffer = fs.readFileSync(filePath);
-      console.log(`[Import Service] File buffer read. Size: ${fileBuffer.length} bytes`);
+      console.log(
+        `[Import Service] File buffer read. Size: ${fileBuffer.length} bytes`,
+      );
 
       const workbook = xlsx.read(fileBuffer, { type: 'buffer' });
       const sheetName = workbook.SheetNames[0];
       const sheet = workbook.Sheets[sheetName];
       console.log(`[Import Service] Excel sheet '${sheetName}' loaded.`);
 
-      const jsonData: string[][] = xlsx.utils.sheet_to_json(sheet, { header: 1, raw: false, defval: '' });
-      console.log(`[Import Service] Raw JSON data from sheet (first row):`, jsonData[0]);
+      const jsonData: string[][] = xlsx.utils.sheet_to_json(sheet, {
+        header: 1,
+        raw: false,
+        defval: '',
+      });
+      console.log(
+        `[Import Service] Raw JSON data from sheet (first row):`,
+        jsonData[0],
+      );
 
       if (!jsonData[0] || !Array.isArray(jsonData[0])) {
-        console.error('[Import Service] Error: Excel file is empty or malformed. No header row found.');
+        console.error(
+          '[Import Service] Error: Excel file is empty or malformed. No header row found.',
+        );
         throw new BadRequestException('Excel file is empty or malformed.');
       }
 
-      const fileHeaders = jsonData[0].map((h) => String(h).replace(/\r?\n|\r/g, '').trim());
+      const fileHeaders = jsonData[0].map((h) =>
+        String(h)
+          .replace(/\r?\n|\r/g, '')
+          .trim(),
+      );
       console.log('[Import Service] File Headers (cleaned):', fileHeaders);
       console.log('[Import Service] Expected Headers:', EXPECTED_HEADERS);
 
       if (fileHeaders.length !== EXPECTED_HEADERS.length) {
-          console.error(`[Import Service] Header Mismatch: Number of headers do not match.`);
-          console.error(`[Import Service] Expected ${EXPECTED_HEADERS.length}, Got ${fileHeaders.length}`);
-          return {
-              success: false,
-              message: 'Uploaded file headers do not match the required format. Header count mismatch.',
-              expectedHeaders: EXPECTED_HEADERS,
-              fileHeaders,
-          };
+        console.error(
+          `[Import Service] Header Mismatch: Number of headers do not match.`,
+        );
+        console.error(
+          `[Import Service] Expected ${EXPECTED_HEADERS.length}, Got ${fileHeaders.length}`,
+        );
+        return {
+          success: false,
+          message:
+            'Uploaded file headers do not match the required format. Header count mismatch.',
+          expectedHeaders: EXPECTED_HEADERS,
+          fileHeaders,
+        };
       }
 
-      const headersMatch = EXPECTED_HEADERS.every((expected, idx) => expected === fileHeaders[idx]);
+      const headersMatch = EXPECTED_HEADERS.every(
+        (expected, idx) => expected === fileHeaders[idx],
+      );
 
       if (!headersMatch) {
-        console.error('[Import Service] Header Mismatch: Content of headers do not match.');
-        console.error('[Import Service] Mismatched Headers (Expected vs File):');
+        console.error(
+          '[Import Service] Header Mismatch: Content of headers do not match.',
+        );
+        console.error(
+          '[Import Service] Mismatched Headers (Expected vs File):',
+        );
         EXPECTED_HEADERS.forEach((expected, idx) => {
-            if (expected !== fileHeaders[idx]) {
-                console.error(`  Index ${idx}: Expected '${expected}', Got '${fileHeaders[idx]}'`);
-            }
+          if (expected !== fileHeaders[idx]) {
+            console.error(
+              `  Index ${idx}: Expected '${expected}', Got '${fileHeaders[idx]}'`,
+            );
+          }
         });
 
         return {
           success: false,
-          message: 'Uploaded file headers do not match the required format. Content mismatch.',
+          message:
+            'Uploaded file headers do not match the required format. Content mismatch.',
           expectedHeaders: EXPECTED_HEADERS,
           fileHeaders,
         };
       }
       console.log('[Import Service] Headers matched successfully.');
 
-      const rowData = xlsx.utils.sheet_to_json(sheet, { raw: false, defval: '' });
-      console.log(`[Import Service] Total rows read from file (excluding header): ${rowData.length}`);
+      const rowData = xlsx.utils.sheet_to_json(sheet, {
+        raw: false,
+        defval: '',
+      });
+      console.log(
+        `[Import Service] Total rows read from file (excluding header): ${rowData.length}`,
+      );
 
-      const requiredFields = ['project', 'unitNumber', 'unitType', 'unitPurpose'];
+      const requiredFields = [
+        'project',
+        'unitNumber',
+        'unitType',
+        'unitPurpose',
+      ];
       const validRows: any[] = [];
       const invalidRows: any[] = [];
 
       console.log('[Import Service] Fetching project names from database...');
-      const projectNames = [...new Set(rowData.map((row: any) => row['Project']))];
-      const projects = await this.projectModel.find({ projectName: { $in: projectNames } }).lean();
-      const projectMap = new Map(projects.map((p: any) => [p.projectName, p._id.toString()]));
-      console.log(`[Import Service] Found ${projects.length} matching projects in DB.`);
+      const projectNames = [
+        ...new Set(rowData.map((row: any) => row['Project'])),
+      ];
+      const projects = await this.projectModel
+        .find({ projectName: { $in: projectNames } })
+        .lean();
+      const projectMap = new Map(
+        projects.map((p: any) => [p.projectName, p._id.toString()]),
+      );
+      console.log(
+        `[Import Service] Found ${projects.length} matching projects in DB.`,
+      );
       if (projectNames.length > projects.length) {
-          const missingProjects = projectNames.filter(name => !projectMap.has(name));
-          console.warn(`[Import Service] Some projects from Excel not found in DB:`, missingProjects);
+        const missingProjects = projectNames.filter(
+          (name) => !projectMap.has(name),
+        );
+        console.warn(
+          `[Import Service] Some projects from Excel not found in DB:`,
+          missingProjects,
+        );
       }
-
 
       rowData.forEach((row: any, index: number) => {
         const rowNumber = index + 2;
         const formattedRow: any = {};
         let rowErrors: string[] = [];
 
-
-
         for (const key in row) {
-          const cleanedKey = String(key).replace(/\r?\n|\r/g, '').trim();
+          const cleanedKey = String(key)
+            .replace(/\r?\n|\r/g, '')
+            .trim();
           const mappedKey = InventoryHeaderMapping[cleanedKey];
           if (mappedKey) {
             formattedRow[mappedKey] = row[key];
@@ -800,30 +852,44 @@ export class InventoryService {
 
         const originalProjectName = row['Project'];
         if (!originalProjectName) {
-            rowErrors.push(`Missing 'Project' name.`);
+          rowErrors.push(`Missing 'Project' name.`);
         } else if (!projectMap.has(originalProjectName)) {
-            rowErrors.push(`Project '${originalProjectName}' not found in the database.`);
+          rowErrors.push(
+            `Project '${originalProjectName}' not found in the database.`,
+          );
         } else {
-            formattedRow.project = projectMap.get(originalProjectName);
+          formattedRow.project = projectMap.get(originalProjectName);
         }
 
         formattedRow.user = userId;
 
-        if (formattedRow.unitView && typeof formattedRow.unitView === 'string') {
-          formattedRow.unitView = formattedRow.unitView.split(',').map((v: string) => v.trim()).filter(v => v !== '');
+        if (
+          formattedRow.unitView &&
+          typeof formattedRow.unitView === 'string'
+        ) {
+          formattedRow.unitView = formattedRow.unitView
+            .split(',')
+            .map((v: string) => v.trim())
+            .filter((v) => v !== '');
         } else {
           formattedRow.unitView = [];
         }
 
-        if (formattedRow.unitNumber === undefined || formattedRow.unitNumber === null || formattedRow.unitNumber === '') {
-            formattedRow.unitNumber = '0';
+        if (
+          formattedRow.unitNumber === undefined ||
+          formattedRow.unitNumber === null ||
+          formattedRow.unitNumber === ''
+        ) {
+          formattedRow.unitNumber = '0';
         } else {
-            formattedRow.unitNumber = String(formattedRow.unitNumber).trim();
+          formattedRow.unitNumber = String(formattedRow.unitNumber).trim();
         }
 
         if (
-          formattedRow.purchasePrice !== undefined && formattedRow.purchasePrice !== '' &&
-          formattedRow.marketPrice !== undefined && formattedRow.marketPrice !== '' &&
+          formattedRow.purchasePrice !== undefined &&
+          formattedRow.purchasePrice !== '' &&
+          formattedRow.marketPrice !== undefined &&
+          formattedRow.marketPrice !== '' &&
           !formattedRow.premiumAndLoss
         ) {
           const purchase = Number(formattedRow.purchasePrice);
@@ -835,55 +901,73 @@ export class InventoryService {
         }
 
         if (!Object.values(unitType).includes(formattedRow.unitType)) {
-            rowErrors.push(`Invalid unitType: '${formattedRow.unitType}'. Expected one of: ${Object.values(unitType).join(', ')}`);
+          rowErrors.push(
+            `Invalid unitType: '${formattedRow.unitType}'. Expected one of: ${Object.values(unitType).join(', ')}`,
+          );
         }
 
         if (!Object.values(UnitPurpose).includes(formattedRow.unitPurpose)) {
-            formattedRow.unitPurpose = 'Pending';
+          formattedRow.unitPurpose = 'Pending';
         }
 
         const washroomVal = formattedRow.noOfWashroom;
         if (washroomVal !== undefined && washroomVal !== '') {
-            const parsed = Number(washroomVal);
-            formattedRow.noOfWashroom = isNaN(parsed) ? null : parsed;
-            if (isNaN(parsed)) {
-            }
+          const parsed = Number(washroomVal);
+          formattedRow.noOfWashroom = isNaN(parsed) ? null : parsed;
+          if (isNaN(parsed)) {
+          }
         } else {
-            formattedRow.noOfWashroom = null;
+          formattedRow.noOfWashroom = null;
         }
 
         formattedRow.additionalRooms = [
           formattedRow.addionalRooms,
           formattedRow.addionalRooms2,
           formattedRow.addionalRooms3,
-          formattedRow.addionalRooms4
+          formattedRow.addionalRooms4,
         ].filter((val) => typeof val === 'string' && val.trim() !== '');
 
-
-        ['addionalRooms', 'addionalRooms2', 'addionalRooms3', 'addionalRooms4'].forEach((k) => {
-            if (formattedRow.hasOwnProperty(k)) {
-                delete formattedRow[k];
-            }
+        [
+          'addionalRooms',
+          'addionalRooms2',
+          'addionalRooms3',
+          'addionalRooms4',
+        ].forEach((k) => {
+          if (formattedRow.hasOwnProperty(k)) {
+            delete formattedRow[k];
+          }
         });
 
-
         const missingFields = requiredFields.filter(
-          (field) => formattedRow[field] === undefined || formattedRow[field] === null || formattedRow[field] === ''
+          (field) =>
+            formattedRow[field] === undefined ||
+            formattedRow[field] === null ||
+            formattedRow[field] === '',
         );
 
         if (missingFields.length > 0) {
-          rowErrors.push(`Missing required fields: ${missingFields.join(', ')}`);
+          rowErrors.push(
+            `Missing required fields: ${missingFields.join(', ')}`,
+          );
         }
 
         if (rowErrors.length > 0) {
-          invalidRows.push({ index: rowNumber, error: rowErrors.join('; '), row: formattedRow });
-          console.warn(`[Import Service] Row ${rowNumber} is INVALID: ${rowErrors.join('; ')}`);
+          invalidRows.push({
+            index: rowNumber,
+            error: rowErrors.join('; '),
+            row: formattedRow,
+          });
+          console.warn(
+            `[Import Service] Row ${rowNumber} is INVALID: ${rowErrors.join('; ')}`,
+          );
         } else {
           validRows.push(formattedRow);
         }
       });
 
-      console.log(`[Import Service] Finished processing all rows. Valid rows: ${validRows.length}, Invalid rows: ${invalidRows.length}`);
+      console.log(
+        `[Import Service] Finished processing all rows. Valid rows: ${validRows.length}, Invalid rows: ${invalidRows.length}`,
+      );
 
       if (validRows.length === 0) {
         console.warn('[Import Service] No valid rows found for insertion.');
@@ -897,56 +981,83 @@ export class InventoryService {
         };
       }
 
-      console.log('[Import Service] Checking for existing units to prevent duplicates...');
+      console.log(
+        '[Import Service] Checking for existing units to prevent duplicates...',
+      );
       const projectUnitPairs = validRows.map((row) => ({
         project: row.project,
         unitNumber: row.unitNumber.trim(),
       }));
 
-      const projectIds = [...new Set(projectUnitPairs.map(p => p.project))];
-      const existingUnits = await this.inventoryModel.find({ project: { $in: projectIds } });
-      const existingSet = new Set(existingUnits.map((u) => `${u.project.toString()}-${u.unitNumber}`));
-      console.log(`[Import Service] Found ${existingUnits.length} existing units in DB.`);
-
+      const projectIds = [...new Set(projectUnitPairs.map((p) => p.project))];
+      const existingUnits = await this.inventoryModel.find({
+        project: { $in: projectIds },
+      });
+      const existingSet = new Set(
+        existingUnits.map((u) => `${u.project.toString()}-${u.unitNumber}`),
+      );
+      console.log(
+        `[Import Service] Found ${existingUnits.length} existing units in DB.`,
+      );
 
       let duplicates = 0;
-      const filteredData = validRows.filter((row, idx) => { // Added idx for unique logging
+      const filteredData = validRows.filter((row, idx) => {
+        // Added idx for unique logging
         const key = `${row.project}-${row.unitNumber.trim()}`;
         if (existingSet.has(key)) {
           duplicates++;
-          console.warn(`[Import Service] Skipping duplicate (before insert): Row #${idx+1} (Unit: ${row.unitNumber}) for Project ID '${row.project}'`);
+          console.warn(
+            `[Import Service] Skipping duplicate (before insert): Row #${idx + 1} (Unit: ${row.unitNumber}) for Project ID '${row.project}'`,
+          );
           return false;
         }
-        existingSet.add(key); 
+        existingSet.add(key);
         return true;
       });
 
-      console.log(`[Import Service] Filtered out ${duplicates} duplicate entries. Remaining for insertion: ${filteredData.length}`);
+      console.log(
+        `[Import Service] Filtered out ${duplicates} duplicate entries. Remaining for insertion: ${filteredData.length}`,
+      );
 
       if (filteredData.length > 0) {
-          console.log('\n--- [Import Service] Final data rows ready for insertion (excluding duplicates) ---');
-          filteredData.forEach((row, index) => {
-              console.log(`[Import Service] Row ${index + 1} for insert:`, JSON.stringify(row));
-          });
-          console.log('--- End of final data rows for insertion ---');
+        console.log(
+          '\n--- [Import Service] Final data rows ready for insertion (excluding duplicates) ---',
+        );
+        filteredData.forEach((row, index) => {
+          console.log(
+            `[Import Service] Row ${index + 1} for insert:`,
+            JSON.stringify(row),
+          );
+        });
+        console.log('--- End of final data rows for insertion ---');
       }
       // --- END NEW LOG ---
-
 
       let insertedDataCount = 0;
       const chunkSize = 5000;
       for (let i = 0; i < filteredData.length; i += chunkSize) {
         const chunk = filteredData.slice(i, i + chunkSize);
-        console.log(`[Import Service] Attempting to insert chunk ${Math.floor(i / chunkSize) + 1} of ${Math.ceil(filteredData.length / chunkSize)} (size: ${chunk.length}).`);
+        console.log(
+          `[Import Service] Attempting to insert chunk ${Math.floor(i / chunkSize) + 1} of ${Math.ceil(filteredData.length / chunkSize)} (size: ${chunk.length}).`,
+        );
         try {
-          const result = await this.inventoryModel.insertMany(chunk, { ordered: false });
+          const result = await this.inventoryModel.insertMany(chunk, {
+            ordered: false,
+          });
           insertedDataCount += result.length;
-          console.log(`[Import Service] Chunk inserted successfully. Inserted ${result.length} documents.`);
+          console.log(
+            `[Import Service] Chunk inserted successfully. Inserted ${result.length} documents.`,
+          );
         } catch (err: any) {
-          console.error(`[Import Service] Error: Chunk insert failed at index ${i}. Error details:`, err);
+          console.error(
+            `[Import Service] Error: Chunk insert failed at index ${i}. Error details:`,
+            err,
+          );
           if (err.writeErrors && Array.isArray(err.writeErrors)) {
             err.writeErrors.forEach((writeError: any) => {
-              console.error(`  Write Error Code: ${writeError.code}, Message: ${writeError.errmsg}, Index: ${writeError.index}`);
+              console.error(
+                `  Write Error Code: ${writeError.code}, Message: ${writeError.errmsg}, Index: ${writeError.index}`,
+              );
             });
           }
         }
@@ -963,18 +1074,23 @@ export class InventoryService {
       };
     } catch (error: any) {
       console.error(`[Import Service] Uncaught error during import:`, error);
-      throw new InternalServerErrorException(error?.message || 'Failed to import inventory due to an unexpected error.');
+      throw new InternalServerErrorException(
+        error?.message ||
+          'Failed to import inventory due to an unexpected error.',
+      );
     } finally {
       if (fs.existsSync(filePath)) {
         try {
           fs.unlinkSync(filePath);
           console.log(`[Import Service] Temporary file deleted: ${filePath}`);
         } catch (e: any) {
-          console.error('[Import Service] Failed to delete temporary file:', e?.message || e);
+          console.error(
+            '[Import Service] Failed to delete temporary file:',
+            e?.message || e,
+          );
         }
       }
       console.log(`[Import Service] Import process cleanup complete.`);
     }
   }
-  
 }

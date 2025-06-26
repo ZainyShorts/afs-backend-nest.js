@@ -348,40 +348,66 @@ export class MasterDevelopmentService {
       // Ensure id is an ObjectId
       const objectId = typeof id === 'string' ? new Types.ObjectId(id) : id;
       // console.log('Deleting masterDevelopment:', id, 'as ObjectId:', objectId, 'type:', typeof objectId);
-      const beforeCount = await this.subDevelopmentModel.countDocuments({ masterDevelopment: objectId });
+
       // console.log('SubDevelopments before delete:', beforeCount);
 
       // 1. Find all subDevelopments for this masterDevelopment
-      const subDevs = await this.subDevelopmentModel.find({ masterDevelopment: objectId }, null, { session });
+      const subDevs = await this.subDevelopmentModel.find(
+        { masterDevelopment: objectId },
+        null,
+        { session },
+      );
       const subDevIds = subDevs.map((sd) => sd._id);
 
       // 2. Find all projects for this masterDevelopment and for these subDevelopments
-      const projects = await this.ProjectModel.find({
-        $or: [
-          { masterDevelopment: objectId },
-          { subDevelopment: { $in: subDevIds } },
-        ],
-      }, null, { session });
+      const projects = await this.ProjectModel.find(
+        {
+          $or: [
+            { masterDevelopment: objectId },
+            { subDevelopment: { $in: subDevIds } },
+          ],
+        },
+        null,
+        { session },
+      );
       const projectIds = projects.map((p) => p._id.toString());
       // console.log('Project IDs for inventory deletion:', projectIds);
 
-      const beforeInvCount = await this.InventoryModel.countDocuments({ project: { $in: projectIds } });
+      const beforeInvCount = await this.InventoryModel.countDocuments({
+        project: { $in: projectIds },
+      });
       // console.log('Inventories before delete:', beforeInvCount);
 
       // 3. Delete inventories for these projects
-      const inventoryDeleteResult = await this.InventoryModel.deleteMany({ project: { $in: projectIds } }, { session });
-      const afterInvCount = await this.InventoryModel.countDocuments({ project: { $in: projectIds } });
+      const inventoryDeleteResult = await this.InventoryModel.deleteMany(
+        { project: { $in: projectIds } },
+        { session },
+      );
+      const afterInvCount = await this.InventoryModel.countDocuments({
+        project: { $in: projectIds },
+      });
       // console.log('Inventories after delete:', afterInvCount);
 
       // 4. Delete projects
-      const projectDeleteResult = await this.ProjectModel.deleteMany({ _id: { $in: projectIds } }, { session });
+      const projectDeleteResult = await this.ProjectModel.deleteMany(
+        { _id: { $in: projectIds } },
+        { session },
+      );
       // 5. Delete subDevelopments
-      const subDevDeleteResult = await this.subDevelopmentModel.deleteMany({ masterDevelopment: objectId }, { session });
+      const subDevDeleteResult = await this.subDevelopmentModel.deleteMany(
+        { masterDevelopment: objectId },
+        { session },
+      );
       // console.log('SubDevelopment delete result:', subDevDeleteResult);
-      const afterCount = await this.subDevelopmentModel.countDocuments({ masterDevelopment: objectId });
+      const afterCount = await this.subDevelopmentModel.countDocuments({
+        masterDevelopment: objectId,
+      });
       // console.log('SubDevelopments after delete:', afterCount);
       // 6. Delete the masterDevelopment
-      const masterDevDeleteResult = await this.MasterDevelopmentModel.deleteOne({ _id: objectId }, { session });
+      const masterDevDeleteResult = await this.MasterDevelopmentModel.deleteOne(
+        { _id: objectId },
+        { session },
+      );
 
       await session.commitTransaction();
       // Optionally log the results
@@ -393,7 +419,10 @@ export class MasterDevelopmentService {
       // });
     } catch (error) {
       await session.abortTransaction();
-      console.error('Error during cascading delete of MasterDevelopment:', error);
+      console.error(
+        'Error during cascading delete of MasterDevelopment:',
+        error,
+      );
       throw new Error('Failed to delete MasterDevelopment and related data');
     } finally {
       session.endSession();
@@ -831,7 +860,6 @@ export class MasterDevelopmentService {
         return true;
       });
 
-      
       // Insert records in chunks
       const chunkSize = 5000;
       let insertedDataCount = 0;
