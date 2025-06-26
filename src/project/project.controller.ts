@@ -28,6 +28,8 @@ import {
 } from 'utils/multer/multer.config';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { RequestWithUser } from 'utils/interface/interfaces';
+import { Roles } from 'src/auth/roles.decorator';
+import { RolesGuard } from 'src/auth/roles.guard';
 
 @Controller('project')
 export class ProjectController {
@@ -105,7 +107,8 @@ export class ProjectController {
     console.log(id);
     return await this.projectService.report(id);
   }
-
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin', 'manager')
   @Delete(':id')
   delete(@Param('id') id: string) {
     return this.projectService.delete(id);
