@@ -166,4 +166,5 @@ export enum RoomType {
   PetRoom = 'Pet Room',
   NurseryOrBabyRoom = 'Nursery / Baby Room',
   TeenLoungeOrKidsPlayroom = "Teen Lounge / Kids' Playroom",
+  // eslint-disable-next-line prettier/prettier
 }
