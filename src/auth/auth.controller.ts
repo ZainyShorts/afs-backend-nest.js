@@ -34,6 +34,22 @@ export class AuthController {
     return this.authService.adminLogin(loginDto);
   }
 
+  @Post('logout')
+  logout(@Res() res: Response) {
+    res.setHeader(
+      'Set-Cookie',
+      serialize('token', '', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        path: '/',
+        expires: new Date(0), // Expire the cookie
+      }),
+    );
+
+    return res.status(200).json({ message: 'Logged out successfully' });
+  }
+
   @Post('verify-login')
   async verifyLogin(
     @Body() dto: { email: string; otp: string },
@@ -51,7 +67,6 @@ export class AuthController {
         secure: process.env.NODE_ENV === 'production', // only over HTTPS in prod
         maxAge: 60 * 60 * 24 * 7, // 7 days
         path: '/', // cookie valid for entire site
-        // sameSite: process.env.NODE_ENV === 'production' ? 'lax' : 'none',
         sameSite: 'strict',
       }),
     );
