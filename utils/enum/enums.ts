@@ -166,5 +166,44 @@ export enum RoomType {
   PetRoom = 'Pet Room',
   NurseryOrBabyRoom = 'Nursery / Baby Room',
   TeenLoungeOrKidsPlayroom = "Teen Lounge / Kids' Playroom",
-  // eslint-disable-next-line prettier/prettier
+} 
+export enum CustomerSegment {
+  Customer = 'Customer',
+  Supplier = 'Supplier',
+}
+
+export enum CustomerCategory {
+  Organisation = 'Organisation',
+  Individual = 'Individual',
+}
+
+export enum CustomerSubCategory {
+  EndUser = 'End User',
+  Investor = 'Investor',
+}
+
+export enum CustomerType {
+  Seller = 'Seller',
+  TenantLongTerm = 'Tenant-Long Term',
+  TenantShortTerm = 'Tenant-Short Term', 
+  Buyer = 'Buyer',
+  ProspectBuyer = 'Prospect Buyer',
+  PropertyOwner = 'Property Owner',
+  SubLease = 'Sub-Lease',
+  Landlord = 'Landlord',
+  Underwriter = 'Underwriter',
+  ShortTermTrader = 'Short Term Trader',
+} 
+export enum CustomerSubType {
+  MasterDeveloper = 'Master Developer',
+  SubDeveloper = 'Sub-Developer',
+  RealEstateInvestor = 'Real Estate Investor',
+  RealEstateBroker = 'Real Estate Broker',
+  PropertyManagement = 'Property Management',
+  Banks = 'Banks',
+  Auction = 'Auction',
+  Contractor = 'Contractor',
+  ArchitectConsultant = 'Architect-Consultant',
+  REIT = 'REIT',
+  PrivateInvestor = 'Private Investor',
 }
