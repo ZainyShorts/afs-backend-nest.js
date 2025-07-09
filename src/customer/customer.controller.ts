@@ -1,12 +1,14 @@
 import {
   Body,
   Controller,
-  Post,
+  Post, 
+  Res,
   Req, 
   Get, 
   BadRequestException,
   UseGuards, 
-  UseInterceptors,
+  UseInterceptors, 
+  Delete,
   HttpStatus, 
   Put,  
   HttpException, 
@@ -17,8 +19,10 @@ import {
 } from '@nestjs/common';
 import { CustomerService } from './customer.service'; 
 import { RequestWithUser } from 'utils/interface/interfaces';
-import { CustomerDTO } from './dto/addCustomer.dto';   
-import { FileInterceptor } from '@nestjs/platform-express';
+import { CustomerDTO } from './dto/addCustomer.dto';    
+import { FileInterceptor } from '@nestjs/platform-express'; 
+import { Response } from 'express'; 
+import { Roles } from 'src/auth/roles.decorator';
 import { FilterCustomerDTO } from './dto/customerFilters.dto';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { RolesGuard } from 'src/auth/roles.guard';
@@ -113,7 +117,7 @@ async findOne(@Param('id') id: string) {
   @UseGuards(JwtAuthGuard)
   @UseInterceptors(
     FileInterceptor('file', {
-      limits: { fileSize: 5 * 1024 * 1024 }, // optional: max file size 5MB
+      limits: { fileSize: 20 * 1024 * 1024 }, 
       fileFilter: (req, file, cb) => {
         if (!file.originalname.match(/\.(xlsx|xls|csv)$/)) {
           return cb(
@@ -126,14 +130,28 @@ async findOne(@Param('id') id: string) {
     }),
   )
   async importCustomers(
-    @UploadedFile() file: Express.Multer.File,
-    @Req() req: any,
-  ) {
-    if (!file) {
-      throw new BadRequestException('File is required');
-    }
-    return this.customerService.importCustomers(file.buffer, req.user.id);
-  } 
+  @UploadedFile() file: Express.Multer.File,
+  @Req() req: any,
+  @Res() res: Response,
+) {
+  if (!file) {
+    throw new BadRequestException('File is required');
+  }
+
+  try {
+    const result = await this.customerService.importCustomers(file.buffer, req.user.id);
+    return res.status(200).json(result); // ✅ Only send 200 if file was valid
+  } catch (error) {
+    return res.status(error.status || 500).json({ message: error.message || 'Server Error' });
+  }
+} 
+
+ @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin', 'manager')
+  @Delete(':id')
+  delete(@Param('id') id: string) {
+    return this.customerService.deleteCustomer(id);
+  }
 
 
 

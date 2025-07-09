@@ -111,7 +111,13 @@ export class Inventory extends Document {
   pictures: string[];
 
   @Prop({ type: Number })
-  paidTODevelopers: number;
+  paidTODevelopers: number;  
+  
+  @Prop({ type: [String], default: [] })
+customers: string[]; 
+
+@Prop({ type: [String], default: [] })
+previousCustomers: string[];
 
   @Prop({ type: Number })
   payableTODevelopers: number;

@@ -10,13 +10,15 @@ import {
 import { HttpStatusCode } from 'axios';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import * as xlsx from 'xlsx';
+import * as xlsx from 'xlsx'; 
+import { Types } from 'mongoose';
 import * as fs from 'fs';
 import { Inventory } from './schema/inventory.schema';
 import { CreateInventorytDto } from './dto/create-inventory.dto';
 import { UpdateInventoryDto } from './dto/update-inventory.dto';
 import { InventoryFilterInput } from './dto/inventoryFilterInput';
-import { Project } from 'src/project/schema/project.schema';
+import { Project } from 'src/project/schema/project.schema'; 
+import { Customer } from 'src/customer/schema/customer.schema';
 import { SubDevelopment } from 'src/subdevelopment/schema/subdevelopment.schema';
 import { MasterDevelopment } from 'src/masterdevelopment/schema/master-development.schema';
 import { RoomType, UnitPurpose, unitType } from 'utils/enum/enums';
@@ -30,7 +32,8 @@ export class InventoryService {
     @InjectModel(SubDevelopment.name)
     private subDevelopmenttModel: Model<Inventory>,
     @InjectModel(MasterDevelopment.name)
-    private masterDevelopmentModel: Model<Inventory>,
+    private masterDevelopmentModel: Model<Inventory>, 
+    @InjectModel(Customer.name) private customerModel: Model<Customer>, 
   ) {}
 
   async create(dto: CreateInventorytDto, userId: string): Promise<any> {
@@ -557,7 +560,66 @@ export class InventoryService {
       );
     }
   }
+  async findOneWithCustomers(id: string): Promise<{
+  inventory: Inventory;
+  currentCustomers: any[];
+  previousCustomers: any[];
+}> {
+  try {
+    console.log('🔍 Received inventory ID:', id);
 
+    // Validate ObjectId
+    if (!Types.ObjectId.isValid(id)) {
+      console.error('❌ Invalid ObjectId:', id);
+      throw new BadRequestException(`Invalid inventory ID: ${id}`);
+    }
+
+    // Find inventory by ID
+    const inventory = await this.inventoryModel.findById(id).exec();
+    console.log('📦 Fetched inventory:', inventory);
+
+    if (!inventory) {
+      console.warn(`⚠️ Inventory not found for ID: ${id}`);
+      throw new NotFoundException(`Inventory unit with ID ${id} not found`);
+    }
+
+    let currentCustomers = [];
+    if (inventory.customers?.length) {
+      console.log('👥 Fetching current customers:', inventory.customers);
+      currentCustomers = await this.customerModel
+        .find({ _id: { $in: inventory.customers } })
+        .select(
+          'customerName customerType customerSegment customerCategory emailAddress mobile1 contactPerson',
+        )
+        .exec();
+      console.log('✅ Found current customers:', currentCustomers.length);
+    }
+
+    let previousCustomers = [];
+    if (inventory.previousCustomers?.length) {
+      console.log('👥 Fetching previous customers:', inventory.previousCustomers);
+      previousCustomers = await this.customerModel
+        .find({ _id: { $in: inventory.previousCustomers } })
+        .select(
+          'customerName customerType customerSegment customerCategory emailAddress mobile1 contactPerson',
+        )
+        .exec();
+      console.log('✅ Found previous customers:', previousCustomers.length);
+    }
+
+    console.log('🎉 Returning final result');
+    return {
+      inventory,
+      currentCustomers,
+      previousCustomers,
+    };
+  } catch (error) {
+    console.error('🔥 Error in findOneWithCustomers:', error);
+    throw new InternalServerErrorException(
+      error.message || 'Failed to find inventory unit with customers',
+    );
+  }
+}
   async updateProperty(
     id: string,
     updateData: UpdateInventoryDto,

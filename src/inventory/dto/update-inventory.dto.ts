@@ -121,5 +121,20 @@ export class UpdateInventoryDto {
 
   @Field(() => Number, { nullable: true })
   @IsOptional()
-  noOfWashroom?: number;
+  noOfWashroom?: number; 
+
+  @Field(() => [String], { nullable: true })
+@IsOptional()
+@IsArray()
+@IsString({ each: true })
+customers?: string[];
+
+  
+
+  @Field(() => [String], { nullable: true })
+@IsOptional()
+@IsArray()
+@IsString({ each: true })
+previousCustomers?: string[];
 }
+ 

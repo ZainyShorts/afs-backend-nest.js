@@ -9,14 +9,16 @@ import {
   ParseIntPipe,
   Patch,
   Post,
-  Query,
+  Query, 
   Req,
   UploadedFile,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
 import { ResponseDto } from 'src/dto/response.dto';
-import { FileInterceptor } from '@nestjs/platform-express';
+import { FileInterceptor } from '@nestjs/platform-express'; 
+import { ApiResponse, ApiOperation , ApiParam } from '@nestjs/swagger';
+
 import {
   multerOptionsForXlxs,
   UploadedFileType,
@@ -110,5 +112,30 @@ export class InventoryController {
       throw new BadRequestException('docId, type and data are required');
     }
     return this.inventoryService.addPlan(docId, type, data);
+  } 
+  @Get('customerDetails/:id')
+@ApiOperation({ summary: 'Get inventory unit with customer details' })
+@ApiParam({ name: 'id', description: 'Inventory unit ID' })
+@ApiResponse({
+  status: 200,
+  description: 'Inventory unit with customer details retrieved successfully',
+})
+@ApiResponse({ status: 404, description: 'Inventory unit not found' })
+async findOneWithCustomers(@Param('id') id: string) {
+  try {
+    const result = await this.inventoryService.findOneWithCustomers(id);
+    
+    return {
+      success: true,
+      message: 'Inventory unit with customers retrieved successfully',
+      data: {
+        inventory: result.inventory,
+        currentCustomers: result.currentCustomers,
+        previousCustomers: result.previousCustomers,
+      },
+    };
+  } catch (error) {
+    throw error;
   }
+}
 }

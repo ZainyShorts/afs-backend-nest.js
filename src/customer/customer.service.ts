@@ -123,15 +123,21 @@ async findAll(
   }
 }
  
- async importCustomers(fileBuffer: Buffer, userId: string) {
-  const workbook = XLSX.read(fileBuffer, { type: 'buffer' });
-  const sheet = workbook.Sheets[workbook.SheetNames[0]];
-  const records = XLSX.utils.sheet_to_json(sheet, { defval: '' }) as any[];
+async importCustomers(fileBuffer: Buffer, userId: string) {
+  let workbook, sheet, records;
 
-  const validRecords: CustomerDTO[] = [];
-  const invalidRecords: any[] = [];
+  try {
+    workbook = XLSX.read(fileBuffer, { type: 'buffer' });
+    sheet = workbook.Sheets[workbook.SheetNames[0]];
+    records = XLSX.utils.sheet_to_json(sheet, { defval: '' }) as any[];
+  } catch {
+    throw new BadRequestException('Invalid Format');
+  }
 
-  // Mapping Excel headers to camelCase DTO keys
+  if (!records || records.length === 0) {
+    throw new BadRequestException('File has no valid data');
+  }
+
   const fieldMap: Record<string, string> = {
     'Customer Segment': 'customerSegment',
     'Customer Category': 'customerCategory',
@@ -153,11 +159,20 @@ async findAll(
     'Office Location': 'officeLocation',
   };
 
-  for (const [index, rawRow] of records.entries()) {
+  const actualHeaders = Object.keys(records[0] || {});
+  const expectedHeaders = Object.keys(fieldMap);
+  const isHeaderMismatch = expectedHeaders.some(header => !actualHeaders.includes(header));
+
+  if (isHeaderMismatch) {
+    throw new BadRequestException('Invalid Format');
+  }
+
+  const validRecords: CustomerDTO[] = [];
+  let invalidCount = 0;
+
+  for (const rawRow of records) {
     try {
       const row: any = {};
-
-      // Convert row keys to camelCase using fieldMap
       for (const [excelKey, camelKey] of Object.entries(fieldMap)) {
         row[camelKey] = rawRow[excelKey] || '';
       }
@@ -186,20 +201,14 @@ async findAll(
         officeLocation: row.officeLocation,
       };
 
-      // Required field check
       if (!customer.customerName || !customer.contactPerson) {
         throw new Error('Required fields missing');
       }
 
-      // Attach userId
       const doc = new this.customerModel({ ...customer, user: userId });
       validRecords.push(doc);
-    } catch (err: any) {
-      invalidRecords.push({
-        rowIndex: index + 2, // Excel rows start at 2
-        data: rawRow,
-        error: err.message,
-      });
+    } catch {
+      invalidCount++;
     }
   }
 
@@ -208,13 +217,15 @@ async findAll(
   }
 
   return {
-    message: 'Import completed',
+    message: `${validRecords.length} successful and ${invalidCount} unsuccessful entries`,
     total: records.length,
     successCount: validRecords.length,
-    errorCount: invalidRecords.length,
-    errors: invalidRecords,
+    errorCount: invalidCount,
   };
 }
+
+
+
 
   private validateEnum(value: string, enumType: any): any {
     if (!Object.values(enumType).includes(value)) {
@@ -259,5 +270,16 @@ async findById(id: string): Promise<Customer> {
       throw new InternalServerErrorException(error.message || 'Failed to update customer');
     }
   }
+ async deleteCustomer(customerId: string) {
+  const deleted = await this.customerModel.findByIdAndDelete(customerId);
 
+  if (!deleted) {
+    throw new NotFoundException('Customer not found');
+  }
+
+  return {
+    message: 'Customer deleted successfully',
+    customerId: deleted._id,
+  };
+}
 }
