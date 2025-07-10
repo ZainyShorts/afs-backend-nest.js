@@ -49,7 +49,11 @@ export class MasterDevelopment extends Document {
   facilitiesCategories: string[];
 
   @Prop({ type: [String], enum: AmenitiesCategory })
-  amentiesCategories: string[];
+  amentiesCategories: string[];  
+  
+   @Prop({ type: [String], default: [] })
+customers: string[]; 
+
 }
 
 export const MasterDevelopmentSchema =

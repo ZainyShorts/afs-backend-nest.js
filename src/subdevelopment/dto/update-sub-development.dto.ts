@@ -13,5 +13,7 @@ export class UpdateSubDevelopmentDto {
   pictures?: string[];
   facilitiesCategories?: string[];
   amentiesCategories?: string[];
-  plotPermission?: string[];
+  plotPermission?: string[];  
+    customers?: string[];
+  
 }

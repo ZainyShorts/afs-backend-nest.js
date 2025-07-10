@@ -3,10 +3,10 @@ import { InventoryService } from './inventory.service';
 import { InventoryController } from './inventory.controller';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Inventory, InventorySchema } from './schema/inventory.schema'; 
-import { Project, ProjectSchema } from 'src/project/schema/project.schema'; 
 import { Customer, CustomerSchema } from '../customer/schema/customer.schema';
 import { CustomerService } from '../customer/customer.service';
 import { CustomerController } from '../customer/customer.controller';
+import { Project, ProjectSchema } from 'src/project/schema/project.schema'; 
 import {
   SubDevelopment,
   SubDevelopmentSchema,

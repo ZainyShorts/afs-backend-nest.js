@@ -112,6 +112,27 @@ async findOne(@Param('id') id: string) {
     data: customer,
   };
 }  
+ 
+@Get('project/:id')
+getCustomersExcludingProject(@Param('id') id: string) {
+  return this.customerService.getCustomersExcludingProjectCustomers(id);
+}
+
+@Get('inventory/:id')
+getCustomersExcludingInventory(@Param('id') id: string) {
+  return this.customerService.getCustomersExcludingInventoryCustomers(id);
+}
+
+@Get('subdevelopment/:id')
+getCustomersExcludingSubDev(@Param('id') id: string) {
+  return this.customerService.getCustomersExcludingSubDevCustomers(id);
+}
+
+@Get('masterdevelopment/:id')
+getCustomersExcludingMasterDev(@Param('id') id: string) {
+  return this.customerService.getCustomersExcludingMasterDevCustomers(id);
+}
+
 
   @Post('import')
   @UseGuards(JwtAuthGuard)

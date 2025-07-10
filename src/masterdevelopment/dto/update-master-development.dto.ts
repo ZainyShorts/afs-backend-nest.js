@@ -8,7 +8,8 @@ export class UpdateMasterDevelopmentDto {
   facilitiesAreaSqFt?: number;
   amentiesAreaSqFt?: number;
   totalAreaSqFt?: number;
-  pictures?: string[];
+  pictures?: string[]; 
+  customers?: string[];
   facilitiesCategories?: string[];
   amentiesCategories?: string[];
 }

@@ -1,7 +1,8 @@
 import {
   ConflictException,
   Injectable,
-  InternalServerErrorException,
+  InternalServerErrorException, 
+  BadRequestException,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectConnection, InjectModel } from '@nestjs/mongoose';
@@ -13,11 +14,13 @@ import {
 import { Connection, Model, Types } from 'mongoose';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
-import { ProjectFilterInput } from './dto/project-filter.input';
+import { ProjectFilterInput } from './dto/project-filter.input'; 
+import { Customer } from 'src/customer/schema/customer.schema';
 import * as XLSX from 'xlsx';
 import * as fs from 'fs';
 import { MasterDevelopment } from 'src/masterdevelopment/schema/master-development.schema';
-import { SubDevelopment } from 'src/subdevelopment/schema/subdevelopment.schema';
+import { SubDevelopment } from 'src/subdevelopment/schema/subdevelopment.schema'; 
+
 
 const test = [
   {
@@ -70,7 +73,9 @@ export class ProjectService {
     private subDevelopment: Model<SubDevelopment>,
     @InjectModel(Inventory.name)
     private inventoryModel: Model<InventoryDocument>,
-    @InjectConnection() private readonly connection: Connection,
+    @InjectConnection() private readonly connection: Connection, 
+    @InjectModel(Customer.name) private customerModel: Model<Customer>, 
+    
   ) {}
 
   async create(
@@ -101,7 +106,56 @@ export class ProjectService {
         error.message || 'Failed to create project',
       );
     }
-  }
+  } 
+
+    async findOneWithCustomers(id: string): Promise<{
+      inventory: Project;
+      currentCustomers: any[];
+    }> {
+      try {
+        console.log('🔍 Received inventory ID:', id);
+    
+        // Validate ObjectId
+        if (!Types.ObjectId.isValid(id)) {
+          console.error('❌ Invalid ObjectId:', id);
+          throw new BadRequestException(`Invalid inventory ID: ${id}`);
+        }
+    
+        // Find inventory by ID
+        const inventory = await this.projectModel.findById(id).exec();
+        console.log('📦 Fetched inventory:', inventory);
+    
+        if (!inventory) {
+          console.warn(`⚠️ Inventory not found for ID: ${id}`);
+          throw new NotFoundException(`Sub Development unit with ID ${id} not found`);
+        }
+    
+        let currentCustomers = [];
+        if (inventory.customers?.length) {
+          console.log('👥 Fetching current customers:', inventory.customers);
+          currentCustomers = await this.customerModel
+            .find({ _id: { $in: inventory.customers } })
+            .select(
+              'customerName customerType customerSegment customerCategory emailAddress mobile1 contactPerson',
+            )
+            .exec();
+          console.log('✅ Found current customers:', currentCustomers.length);
+        }
+    
+       
+    
+        console.log('🎉 Returning final result');
+        return {
+          inventory,
+          currentCustomers,
+        };
+      } catch (error) {
+        console.error('🔥 Error in findOneWithCustomers:', error);
+        throw new InternalServerErrorException(
+          error.message || 'Failed to find inventory unit with customers',
+        );
+      }
+    }
 
   async findAll(
     page = 1,

@@ -1,6 +1,7 @@
 import {
   BadRequestException,
-  Injectable,
+  Injectable, 
+  NotFoundException,
   InternalServerErrorException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
@@ -19,7 +20,8 @@ import { MasterDevelopmentFilterInput } from './dto/MasterDevelopmentFilterInput
 import { MasterDevelopmentheaderMapping } from 'utils/methods/methods';
 import { Project } from 'src/project/schema/project.schema';
 import { Inventory } from 'src/inventory/schema/inventory.schema';
-import { SubDevelopment } from 'src/subdevelopment/schema/subdevelopment.schema';
+import { SubDevelopment } from 'src/subdevelopment/schema/subdevelopment.schema'; 
+import { Customer } from 'src/customer/schema/customer.schema';
 import { InjectConnection } from '@nestjs/mongoose';
 import { Connection } from 'mongoose';
 
@@ -34,7 +36,9 @@ export class MasterDevelopmentService {
     private readonly ProjectModel: Model<Project>,
     @InjectModel(Inventory.name)
     private readonly InventoryModel: Model<Inventory>,
-    @InjectConnection() private readonly connection: Connection,
+    @InjectConnection() private readonly connection: Connection, 
+        @InjectModel(Customer.name) private customerModel: Model<Customer>, 
+    
   ) {}
 
   async create(
@@ -101,7 +105,54 @@ export class MasterDevelopmentService {
       );
     }
   }
-
+   async findOneWithCustomers(id: string): Promise<{
+        inventory: MasterDevelopment;
+        currentCustomers: any[];
+      }> {
+        try {
+          console.log('🔍 Received inventory ID:', id);
+      
+          // Validate ObjectId
+          if (!Types.ObjectId.isValid(id)) {
+            console.error('❌ Invalid ObjectId:', id);
+            throw new BadRequestException(`Invalid inventory ID: ${id}`);
+          }
+      
+          // Find inventory by ID
+          const inventory = await this.MasterDevelopmentModel.findById(id).exec();
+          console.log('📦 Fetched inventory:', inventory);
+      
+          if (!inventory) {
+            console.warn(`⚠️ Inventory not found for ID: ${id}`);
+            throw new NotFoundException(`Sub Development unit with ID ${id} not found`);
+          }
+      
+          let currentCustomers = [];
+          if (inventory.customers?.length) {
+            console.log('👥 Fetching current customers:', inventory.customers);
+            currentCustomers = await this.customerModel
+              .find({ _id: { $in: inventory.customers } })
+              .select(
+                'customerName customerType customerSegment customerCategory emailAddress mobile1 contactPerson',
+              )
+              .exec();
+            console.log('✅ Found current customers:', currentCustomers.length);
+          }
+      
+         
+      
+          console.log('🎉 Returning final result');
+          return {
+            inventory,
+            currentCustomers,
+          };
+        } catch (error) {
+          console.error('🔥 Error in findOneWithCustomers:', error);
+          throw new InternalServerErrorException(
+            error.message || 'Failed to find inventory unit with customers',
+          );
+        }
+      }
   async findAll(
     page = 1,
     limit = 10,

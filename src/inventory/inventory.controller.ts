@@ -112,8 +112,9 @@ export class InventoryController {
       throw new BadRequestException('docId, type and data are required');
     }
     return this.inventoryService.addPlan(docId, type, data);
-  } 
-  @Get('customerDetails/:id')
+  }  
+
+  @Get('customerDetail/:id')
 @ApiOperation({ summary: 'Get inventory unit with customer details' })
 @ApiParam({ name: 'id', description: 'Inventory unit ID' })
 @ApiResponse({
@@ -131,7 +132,6 @@ async findOneWithCustomers(@Param('id') id: string) {
       data: {
         inventory: result.inventory,
         currentCustomers: result.currentCustomers,
-        previousCustomers: result.previousCustomers,
       },
     };
   } catch (error) {

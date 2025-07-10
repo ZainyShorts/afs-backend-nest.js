@@ -102,7 +102,10 @@ export class Project {
   postHandOver: string;
 
   @Prop([String])
-  pictures: string[];
+  pictures: string[];  
+  
+     @Prop({ type: [String], default: [] })
+  customers: string[]; 
 }
 
 export const ProjectSchema = SchemaFactory.createForClass(Project);

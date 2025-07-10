@@ -57,7 +57,10 @@ export class SubDevelopment extends Document {
   facilitiesCategories: string[];
 
   @Prop({ type: [String], enum: AmenitiesCategory })
-  amentiesCategories: string[];
+  amentiesCategories: string[];  
+  
+     @Prop({ type: [String], default: [] })
+customers: string[]; 
 }
 
 export const SubDevelopmentSchema =

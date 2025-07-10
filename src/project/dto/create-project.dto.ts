@@ -3,7 +3,8 @@ import {
   IsString,
   IsEnum,
   IsArray,
-  IsNumber,
+  IsNumber,  
+  IsOptional,
   IsNotEmpty,
   IsObject,
 } from 'class-validator';
@@ -87,5 +88,10 @@ export class CreateProjectDto {
   postHandOver?: string;
 
   @IsArray()
-  pictures?: string[];
+  pictures?: string[]; 
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  customers?: string[];
 }

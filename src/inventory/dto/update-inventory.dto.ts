@@ -131,10 +131,5 @@ customers?: string[];
 
   
 
-  @Field(() => [String], { nullable: true })
-@IsOptional()
-@IsArray()
-@IsString({ each: true })
-previousCustomers?: string[];
 }
  

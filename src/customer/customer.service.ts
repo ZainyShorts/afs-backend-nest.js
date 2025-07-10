@@ -9,20 +9,37 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Customer } from './schema/customer.schema';
 import { CustomerDTO } from './dto/addCustomer.dto'; 
-import { FilterCustomerDTO } from './dto/customerFilters.dto'; 
+import { FilterCustomerDTO } from './dto/customerFilters.dto';  
+import { Types } from 'mongoose';
 import {
   CustomerCategory,
   CustomerSegment,
   CustomerSubCategory,
   CustomerSubType,
   CustomerType,
-} from 'utils/enum/enums';
+} from 'utils/enum/enums'; 
+import { Project } from 'src/project/schema/project.schema'; 
+import { SubDevelopment } from 'src/subdevelopment/schema/subdevelopment.schema'; 
+import { Inventory } from 'src/Inventory/schema/inventory.schema'; 
+import { MasterDevelopment } from 'src/masterdevelopment/schema/master-development.schema';
 
 @Injectable()
 export class CustomerService {
-  constructor(
+ constructor(
     @InjectModel(Customer.name)
     private readonly customerModel: Model<Customer>,
+    @InjectModel(MasterDevelopment.name)
+    private readonly masterDevelopmentModel: Model<MasterDevelopment>,
+
+    @InjectModel(Project.name)
+    private readonly projectModel: Model<Project>,
+
+    @InjectModel(SubDevelopment.name)
+    private readonly subDevelopmentModel: Model<SubDevelopment>,
+
+    @InjectModel(Inventory.name)
+    private readonly inventoryModel: Model<Inventory>,
+
   ) {}
 
    async create(customerData: CustomerDTO, userId: string): Promise<Customer> {
@@ -51,7 +68,7 @@ async findAll(
   filterDto: FilterCustomerDTO,
   page = 1,
   limit = 10,
-  sortBy = 'createdAt',
+  sortBy = 'createdAt', 
   sortOrder: 'asc' | 'desc' = 'desc',
 ): Promise<{ data: Customer[]; total: number }> {
   try {
@@ -269,8 +286,73 @@ async findById(id: string): Promise<Customer> {
     } catch (error) {
       throw new InternalServerErrorException(error.message || 'Failed to update customer');
     }
-  }
+  } 
+
+async getCustomersExcludingProjectCustomers(projectId: string): Promise<Customer[]> {
+  const project = await this.projectModel.findById(projectId).select('customers').lean();
+  const customersToExclude = project?.customers?.map(id => id.toString()) || [];
+
+  const allCustomers = await this.customerModel.find().lean();
+
+  return allCustomers.filter(c => !customersToExclude.includes(c._id.toString()));
+}
+
+async getCustomersExcludingInventoryCustomers(inventoryId: string): Promise<Customer[]> {
+  const inventory = await this.inventoryModel.findById(inventoryId).select('customers').lean();
+  const customersToExclude = inventory?.customers?.map(id => id.toString()) || [];
+
+  const allCustomers = await this.customerModel.find().lean();
+
+  return allCustomers.filter(c => !customersToExclude.includes(c._id.toString()));
+}
+
+async getCustomersExcludingSubDevCustomers(subDevId: string): Promise<Customer[]> {
+  const subDev = await this.subDevelopmentModel.findById(subDevId).select('customers').lean();
+  const customersToExclude = subDev?.customers?.map(id => id.toString()) || [];
+
+  const allCustomers = await this.customerModel.find().lean();
+
+  return allCustomers.filter(c => !customersToExclude.includes(c._id.toString()));
+}
+
+async getCustomersExcludingMasterDevCustomers(masterDevId: string): Promise<Customer[]> {
+  const masterDev = await this.masterDevelopmentModel.findById(masterDevId).select('customers').lean();
+  const customersToExclude = masterDev?.customers?.map(id => id.toString()) || [];
+
+  const allCustomers = await this.customerModel.find().lean();
+
+  return allCustomers.filter(c => !customersToExclude.includes(c._id.toString()));
+}
+
+
+
+
+
  async deleteCustomer(customerId: string) {
+  // Convert to ObjectId if needed
+  const customerObjectId = new Types.ObjectId(customerId);
+
+  // Update all 4 schemas where the customer exists in customers array
+  await Promise.all([
+    this.projectModel.updateMany(
+      { customers: customerObjectId },
+      { $pull: { customers: customerObjectId } }
+    ),
+    this.inventoryModel.updateMany(
+      { customers: customerObjectId },
+      { $pull: { customers: customerObjectId } }
+    ),
+    this.subDevelopmentModel.updateMany(
+      { customers: customerObjectId },
+      { $pull: { customers: customerObjectId } }
+    ),
+    this.masterDevelopmentModel.updateMany(
+      { customers: customerObjectId },
+      { $pull: { customers: customerObjectId } }
+    ),
+  ]);
+
+  // Now delete the customer
   const deleted = await this.customerModel.findByIdAndDelete(customerId);
 
   if (!deleted) {
@@ -282,4 +364,5 @@ async findById(id: string): Promise<Customer> {
     customerId: deleted._id,
   };
 }
+
 }

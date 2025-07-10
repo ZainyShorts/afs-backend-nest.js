@@ -13,7 +13,8 @@ import {
   Req,
 } from '@nestjs/common';
 import { CreateMasterDevelopmentDto } from './dto/create-master-development.dto';
-import { MasterDevelopmentService } from './masterdevelopment.service';
+import { MasterDevelopmentService } from './masterdevelopment.service'; 
+import { ApiResponse, ApiOperation , ApiParam } from '@nestjs/swagger';
 import { MasterDevelopmentFilterInput } from './dto/MasterDevelopmentFilterInput';
 import { FileInterceptor } from '@nestjs/platform-express';
 import {
@@ -60,7 +61,32 @@ export class MasterDevelopmentController {
       filter,
       fields,
     );
-  }
+  } 
+  @Get(':id')
+findAllById(
+  @Param('id') id: string,
+  @Query('page') page = 1,
+  @Query('limit') limit = 10,
+  @Query('sortBy') sortBy = 'createdAt',
+  @Query('sortOrder') sortOrder = 'desc',
+  @Query() filter?: MasterDevelopmentFilterInput,
+  @Query('fields') fields?: string,
+) {
+  // Add the ID to filter object (e.g. as propertyId)
+  const finalFilter = {
+    ...(filter || {}),
+    propertyId: id, // inject propertyId
+  };
+
+  return this.service.findAll(
+    +page,
+    +limit,
+    sortBy,
+    sortOrder as 'asc' | 'desc',
+    finalFilter,
+    fields,
+  );
+}
 
   @Get(':id')
   findOne(@Param('id') id: string) {
@@ -82,5 +108,29 @@ export class MasterDevelopmentController {
   @Get('report/:id')
   report(@Param('id') id: string) {
     return this.service.report(id);
+  } 
+   @Get('customerDetails/:id')
+  @ApiOperation({ summary: 'Get inventory unit with customer details' })
+  @ApiParam({ name: 'id', description: 'Inventory unit ID' })
+  @ApiResponse({
+    status: 200,
+    description: 'Inventory unit with customer details retrieved successfully',
+  })
+  @ApiResponse({ status: 404, description: 'Inventory unit not found' })
+  async findOneWithCustomers(@Param('id') id: string) {
+    try {
+      const result = await this.service.findOneWithCustomers(id);
+      
+      return {
+        success: true,
+        message: 'Inventory unit with customers retrieved successfully',
+        data: {
+          inventory: result.inventory,
+          currentCustomers: result.currentCustomers,
+        },
+      };
+    } catch (error) {
+      throw error;
+    }
   }
 }

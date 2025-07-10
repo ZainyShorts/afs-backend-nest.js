@@ -17,8 +17,8 @@ import { Inventory } from './schema/inventory.schema';
 import { CreateInventorytDto } from './dto/create-inventory.dto';
 import { UpdateInventoryDto } from './dto/update-inventory.dto';
 import { InventoryFilterInput } from './dto/inventoryFilterInput';
-import { Project } from 'src/project/schema/project.schema'; 
 import { Customer } from 'src/customer/schema/customer.schema';
+import { Project } from 'src/project/schema/project.schema'; 
 import { SubDevelopment } from 'src/subdevelopment/schema/subdevelopment.schema';
 import { MasterDevelopment } from 'src/masterdevelopment/schema/master-development.schema';
 import { RoomType, UnitPurpose, unitType } from 'utils/enum/enums';
@@ -563,7 +563,6 @@ export class InventoryService {
   async findOneWithCustomers(id: string): Promise<{
   inventory: Inventory;
   currentCustomers: any[];
-  previousCustomers: any[];
 }> {
   try {
     console.log('🔍 Received inventory ID:', id);
@@ -595,23 +594,12 @@ export class InventoryService {
       console.log('✅ Found current customers:', currentCustomers.length);
     }
 
-    let previousCustomers = [];
-    if (inventory.previousCustomers?.length) {
-      console.log('👥 Fetching previous customers:', inventory.previousCustomers);
-      previousCustomers = await this.customerModel
-        .find({ _id: { $in: inventory.previousCustomers } })
-        .select(
-          'customerName customerType customerSegment customerCategory emailAddress mobile1 contactPerson',
-        )
-        .exec();
-      console.log('✅ Found previous customers:', previousCustomers.length);
-    }
+   
 
     console.log('🎉 Returning final result');
     return {
       inventory,
       currentCustomers,
-      previousCustomers,
     };
   } catch (error) {
     console.error('🔥 Error in findOneWithCustomers:', error);

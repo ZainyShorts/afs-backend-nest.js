@@ -15,7 +15,9 @@ import {
 } from '@nestjs/common';
 import { SubDevelopmentService } from './subdevelopment.service';
 import { CreateSubDevelopmentDto } from './dto/create-sub-development.dto';
-import { SubDevelopmentFilterInput } from './dto/sub-development-filter.input';
+import { SubDevelopmentFilterInput } from './dto/sub-development-filter.input'; 
+import { ApiResponse, ApiOperation , ApiParam } from '@nestjs/swagger';
+
 import { FileInterceptor } from '@nestjs/platform-express';
 import {
   multerOptionsForXlxs,
@@ -80,5 +82,30 @@ export class SubDevelopmentController {
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.service.remove(id);
+  } 
+
+    @Get('customerDetails/:id')
+  @ApiOperation({ summary: 'Get inventory unit with customer details' })
+  @ApiParam({ name: 'id', description: 'Inventory unit ID' })
+  @ApiResponse({
+    status: 200,
+    description: 'Inventory unit with customer details retrieved successfully',
+  })
+  @ApiResponse({ status: 404, description: 'Inventory unit not found' })
+  async findOneWithCustomers(@Param('id') id: string) {
+    try {
+      const result = await this.service.findOneWithCustomers(id);
+      
+      return {
+        success: true,
+        message: 'Inventory unit with customers retrieved successfully',
+        data: {
+          inventory: result.inventory,
+          currentCustomers: result.currentCustomers,
+        },
+      };
+    } catch (error) {
+      throw error;
+    }
   }
 }

@@ -20,7 +20,8 @@ import { ProjectService } from './project.service';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { Project } from './schema/project.schema';
 import { UpdateProjectDto } from './dto/update-project.dto';
-import { ProjectFilterInput } from './dto/project-filter.input';
+import { ProjectFilterInput } from './dto/project-filter.input'; 
+import { ApiResponse, ApiOperation , ApiParam } from '@nestjs/swagger';
 import { FileInterceptor } from '@nestjs/platform-express';
 import {
   multerOptionsForXlxs,
@@ -112,5 +113,30 @@ export class ProjectController {
   @Delete(':id')
   delete(@Param('id') id: string) {
     return this.projectService.delete(id);
-  }
+  } 
+
+   @Get('customerDetails/:id')
+    @ApiOperation({ summary: 'Get inventory unit with customer details' })
+    @ApiParam({ name: 'id', description: 'Inventory unit ID' })
+    @ApiResponse({
+      status: 200,
+      description: 'Inventory unit with customer details retrieved successfully',
+    })
+    @ApiResponse({ status: 404, description: 'Inventory unit not found' })
+    async findOneWithCustomers(@Param('id') id: string) {
+      try {
+        const result = await this.projectService.findOneWithCustomers(id);
+        
+        return {
+          success: true,
+          message: 'Inventory unit with customers retrieved successfully',
+          data: {
+            inventory: result.inventory,
+            currentCustomers: result.currentCustomers,
+          },
+        };
+      } catch (error) {
+        throw error;
+      }
+    }
 }

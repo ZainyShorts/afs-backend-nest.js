@@ -3,7 +3,10 @@ import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { ProjectService } from './project.service';
 import { ProjectController } from './project.controller';
-import { Project, ProjectSchema } from './schema/project.schema';
+import { Project, ProjectSchema } from './schema/project.schema'; 
+import { Customer, CustomerSchema } from '../customer/schema/customer.schema';
+import { CustomerService } from '../customer/customer.service';
+import { CustomerController } from '../customer/customer.controller';
 import {
   Inventory,
   InventorySchema,
@@ -24,10 +27,12 @@ import {
       { name: SubDevelopment.name, schema: SubDevelopmentSchema },
       { name: Inventory.name, schema: InventorySchema },
       { name: Project.name, schema: ProjectSchema },
-      { name: Inventory.name, schema: InventorySchema },
+      { name: Inventory.name, schema: InventorySchema }, 
+      { name: Customer.name, schema: CustomerSchema },
+      
     ]),
   ],
-  controllers: [ProjectController],
-  providers: [ProjectService],
+  controllers: [ProjectController , CustomerController],
+  providers: [ProjectService , CustomerService],
 })
 export class ProjectModule {}
