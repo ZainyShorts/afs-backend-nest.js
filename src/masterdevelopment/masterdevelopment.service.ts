@@ -96,14 +96,16 @@ export class MasterDevelopmentService {
       const created = new this.MasterDevelopmentModel({ ...dto, user: userId });
       return await created.save();
     } catch (error) {
-      if (error.response.statusCode == 400) {
-        throw new BadRequestException(error?.response?.message);
-      }
-      // Throw Internal Server Error
-      throw new InternalServerErrorException(
-        error?.response?.message || 'Internal server error occurred.',
-      );
-    }
+  const statusCode = error?.response?.statusCode;
+
+  if (statusCode === 400) {
+    throw new BadRequestException(error?.response?.message);
+  }
+
+  throw new InternalServerErrorException(
+    error?.response?.message || 'Internal server error occurred.',
+  );
+}
   }
    async findOneWithCustomers(id: string): Promise<{
         inventory: MasterDevelopment;

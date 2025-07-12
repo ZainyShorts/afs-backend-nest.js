@@ -6,7 +6,9 @@ import {
   CustomerCategory,
   CustomerSubCategory,
   CustomerType,
-  CustomerSubType,
+  CustomerSubType,  
+  customerBusinessSector,  
+  CustomerNationality
 } from 'utils/enum/enums';
 
 @Schema({ timestamps: true })
@@ -29,11 +31,11 @@ export class Customer extends Document {
   @Prop({ enum: CustomerSubType, required: true })
   customerSubType: CustomerSubType;
     
-    @Prop({ required: true, trim: true })
-  customerBusinessSector: string;
+    @Prop({ enum: customerBusinessSector, required: true })
+  customerBusinessSector: customerBusinessSector;
    
-  @Prop({ required: true, trim: true })
-  customerNationality: string;
+  @Prop({ enum: CustomerNationality, required: true })
+  customerNationality: CustomerNationality;
 
   @Prop({ required: true, trim: true })
   customerName: string;
