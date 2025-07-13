@@ -25,7 +25,7 @@ import {
       { name: MasterDevelopment.name, schema: MasterDevelopmentSchema },
       { name: Project.name, schema: ProjectSchema },
       { name: Inventory.name, schema: InventorySchema }, 
-            { name: Customer.name, schema: CustomerSchema }, // ✅ Added Customer model
+            { name: Customer.name, schema: CustomerSchema }, 
       { name: SubDevelopment.name, schema: SubDevelopmentSchema },
     ]),
   ],

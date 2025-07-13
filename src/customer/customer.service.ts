@@ -16,7 +16,9 @@ import {
   CustomerSegment,
   CustomerSubCategory,
   CustomerSubType,
-  CustomerType,
+  CustomerType,  
+  CustomerNationality,
+  customerBusinessSector,
 } from 'utils/enum/enums'; 
 import { Project } from 'src/project/schema/project.schema'; 
 import { SubDevelopment } from 'src/subdevelopment/schema/subdevelopment.schema'; 
@@ -201,8 +203,8 @@ async importCustomers(fileBuffer: Buffer, userId: string) {
         customerType: this.validateEnum(row.customerType, CustomerType),
         customerSubType: this.validateEnum(row.customerSubType, CustomerSubType),
 
-        customerBusinessSector: row.customerBusinessSector,
-        customerNationality: row.customerNationality,
+        customerBusinessSector: this.validateEnum(row.customerBusinessSector, customerBusinessSector),   
+        customerNationality: this.validateEnum(row.customerNationality, CustomerNationality),  
         customerName: row.customerName,
         contactPerson: row.contactPerson,
         customerDepartment: row.customerDepartment,

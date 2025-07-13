@@ -695,7 +695,94 @@ export class InventoryService {
         msg: 'Failed to update property',
       };
     }
-  }
+  } 
+
+
+
+   async removeCustomer(InventoryId: string, customerId: string): Promise<Inventory> {
+         try {
+           const development = await this.inventoryModel.findById(InventoryId).exec();
+       
+           if (!development) {
+             throw new Error('MasterDevelopment not found');
+           }
+       
+           // Step 1: Remove customerId from MasterDevelopment.customers
+           const index = development.customers.findIndex((id: string) => id === customerId);
+       
+           if (index !== -1) {
+             development.customers.splice(index, 1);
+             await development.save();
+           }
+       
+           // Step 2: Remove masterDevelopment assignment from Customer.assigned
+           const customer = await this.customerModel.findById(customerId).exec();
+       
+           if (!customer) {
+             throw new Error('Customer not found');
+           }
+       
+           if (Array.isArray(customer.assigned)) {
+             customer.assigned = customer.assigned.filter(
+               (assignment) => !(assignment.id === InventoryId && assignment.name === 'inventory'),
+             );
+       
+             await customer.save();
+           }
+       
+           return development;
+         } catch (error) {
+           console.error('Error removing customer from MasterDevelopment:', error);
+           throw new Error('Failed to remove customer from MasterDevelopment');
+         }
+       }
+       async addCustomer(InventoryId: string, customerId: string): Promise<Inventory> {
+         try {
+           const development = await this.inventoryModel.findById(InventoryId).exec();
+       
+           if (!development) {
+             throw new Error('SubDevlopment not found');
+           }
+       
+           // Step 1: Add customerId to MasterDevelopment if not already present
+           if (!development.customers.includes(customerId)) {
+             development.customers.push(customerId);
+             await development.save();
+           }
+       
+           // Step 2: Update the customer's `assigned` array
+           const customer = await this.customerModel.findById(customerId).exec();
+       
+           if (!customer) {
+             throw new Error('Customer not found');
+           }
+       
+           const alreadyAssigned = customer.assigned?.some(
+             (entry) => entry.id === InventoryId && entry.name === 'inventory'
+           );
+       
+           if (!alreadyAssigned) {
+             const newAssignment = {
+               id: InventoryId,
+               name: 'Inventory',
+               propertyName: development.unitNumber,
+             };
+       
+             if (!customer.assigned) {
+               customer.assigned = [newAssignment];
+             } else {
+               customer.assigned.push(newAssignment);
+             }
+       
+             await customer.save();
+           }
+       
+           return development;
+         } catch (error) {
+           console.error('Error adding customer to Sub Development:', error);
+           throw new Error('Failed to add customer to Sub Development');
+         }
+       } 
 
   async import(filePath: string, userId: string): Promise<any> {
     const EXPECTED_HEADERS = [

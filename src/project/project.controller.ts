@@ -14,7 +14,9 @@ import {
   UseInterceptors,
   UploadedFile,
   UseGuards,
-  Req,
+  Req, 
+  HttpException,  
+  HttpStatus,
 } from '@nestjs/common';
 import { ProjectService } from './project.service';
 import { CreateProjectDto } from './dto/create-project.dto';
@@ -121,7 +123,55 @@ export class ProjectController {
     @ApiResponse({
       status: 200,
       description: 'Inventory unit with customer details retrieved successfully',
-    })
+    }) 
+
+    @Delete(':projectId/customers/:customerId')
+      async removeCustomerFromMasterDevelopment(
+        @Param('projectId') masterDevelopmentId: string,
+        @Param('customerId') customerId: string,
+      ) {
+        try {
+          const updatedDevelopment = await this.projectService.removeCustomer(
+            masterDevelopmentId,
+            customerId,
+          );
+          return {
+            message: 'Customer removed successfully',
+            data: updatedDevelopment,
+          };
+        } catch (error) {
+          throw new HttpException(
+            error.message || 'Failed to remove customer',
+            HttpStatus.BAD_REQUEST,
+          );
+        }
+      } 
+    
+      @Post(':projectId/customers/:customerId')
+      async addCustomerToMasterDevelopment(
+        @Param('projectId') masterDevelopmentId: string,
+        @Param('customerId') customerId: string,
+      ) {
+        try {
+          const updatedDevelopment =
+            await this.projectService.addCustomer(
+              masterDevelopmentId,
+              customerId,
+            );
+          return {
+            message: 'Customer added successfully',
+            data: updatedDevelopment,
+          };
+        } catch (error) {
+          throw new HttpException(
+            error.message || 'Failed to add customer',
+            HttpStatus.BAD_REQUEST,
+          );
+        }
+      }
+    
+
+
     @ApiResponse({ status: 404, description: 'Inventory unit not found' })
     async findOneWithCustomers(@Param('id') id: string) {
       try {

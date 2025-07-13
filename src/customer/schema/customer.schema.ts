@@ -6,9 +6,9 @@ import {
   CustomerCategory,
   CustomerSubCategory,
   CustomerType,
-  CustomerSubType,  
-  customerBusinessSector,  
-  CustomerNationality
+  CustomerSubType,
+  customerBusinessSector,
+  CustomerNationality,
 } from 'utils/enum/enums';
 
 @Schema({ timestamps: true })
@@ -30,10 +30,10 @@ export class Customer extends Document {
 
   @Prop({ enum: CustomerSubType, required: true })
   customerSubType: CustomerSubType;
-    
-    @Prop({ enum: customerBusinessSector, required: true })
+
+  @Prop({ enum: customerBusinessSector, required: true })
   customerBusinessSector: customerBusinessSector;
-   
+
   @Prop({ enum: CustomerNationality, required: true })
   customerNationality: CustomerNationality;
 
@@ -69,6 +69,19 @@ export class Customer extends Document {
 
   @Prop({ required: false, trim: true })
   officeLocation: string;
+
+  @Prop([
+    {
+      id: { type: String, required: false },
+      name: { type: String, required: false },
+      propertyName: { type: String, required: false },
+    },
+  ])
+  assigned: {
+    id: string;
+    name: string;
+    propertyName: string;
+  }[];
 }
 
 export const CustomerSchema = SchemaFactory.createForClass(Customer);

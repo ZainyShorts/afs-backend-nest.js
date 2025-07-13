@@ -7,7 +7,9 @@ import {
   Delete,
   Patch,
   Query,
-  UseInterceptors,
+  UseInterceptors, 
+  HttpException,
+   HttpStatus ,
   UploadedFile,
   UseGuards,
   Req,
@@ -99,6 +101,53 @@ findAllById(
   delete(@Param('id') id: string) {
     return this.service.delete(id);
   }
+ 
+
+  @Delete(':masterDevelopmentId/customers/:customerId')
+  async removeCustomerFromMasterDevelopment(
+    @Param('masterDevelopmentId') masterDevelopmentId: string,
+    @Param('customerId') customerId: string,
+  ) {
+    try {
+      const updatedDevelopment = await this.service.removeCustomer(
+        masterDevelopmentId,
+        customerId,
+      );
+      return {
+        message: 'Customer removed successfully',
+        data: updatedDevelopment,
+      };
+    } catch (error) {
+      throw new HttpException(
+        error.message || 'Failed to remove customer',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+  } 
+
+  @Post(':masterDevelopmentId/customers/:customerId')
+  async addCustomerToMasterDevelopment(
+    @Param('masterDevelopmentId') masterDevelopmentId: string,
+    @Param('customerId') customerId: string,
+  ) {
+    try {
+      const updatedDevelopment =
+        await this.service.addCustomer(
+          masterDevelopmentId,
+          customerId,
+        );
+      return {
+        message: 'Customer added successfully',
+        data: updatedDevelopment,
+      };
+    } catch (error) {
+      throw new HttpException(
+        error.message || 'Failed to add customer',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+  }
+
 
   @Patch('updateSingleRecord/:id')
   update(@Param('id') id: string, @Body() dto: CreateMasterDevelopmentDto) {

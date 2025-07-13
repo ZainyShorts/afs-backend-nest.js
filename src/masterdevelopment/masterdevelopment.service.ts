@@ -393,69 +393,176 @@ export class MasterDevelopmentService {
       throw new Error('Failed to find MasterDevelopment');
     }
   }
+  async removeCustomer(masterDevelopmentId: string, customerId: string): Promise<MasterDevelopment> {
+  try {
+    const development = await this.MasterDevelopmentModel.findById(masterDevelopmentId).exec();
 
-  async delete(id: string): Promise<void> {
-    const session = await this.connection.startSession();
-    session.startTransaction();
-    try {
-      // Support both string and ObjectId for masterDevelopment field
-      const masterDevId = Types.ObjectId.isValid(id) ? new Types.ObjectId(id) : id;
-      // 1. Find all subDevelopments for this masterDevelopment
-      const subDevs = await this.subDevelopmentModel.find({
-        $or: [
-          { masterDevelopment: id },
-          { masterDevelopment: masterDevId },
-        ],
-      }, null, { session });
-      const subDevIds = subDevs.map((sd) => sd._id);
-
-      // 2. Find all projects for this masterDevelopment and for these subDevelopments
-      const projects = await this.ProjectModel.find({
-        $or: [
-          { masterDevelopment: id },
-          { masterDevelopment: masterDevId },
-          { subDevelopment: { $in: subDevIds } },
-        ],
-      }, null, { session });
-      const projectIds = projects.map((p) => p._id.toString());
-
-      // 3. Delete inventories for these projects
-      await this.InventoryModel.deleteMany({ project: { $in: projectIds } }, { session });
-
-      // 4. Delete projects
-      await this.ProjectModel.deleteMany({
-        $or: [
-          { masterDevelopment: id },
-          { masterDevelopment: masterDevId },
-          { subDevelopment: { $in: subDevIds } },
-        ],
-      }, { session });
-
-      // 5. Delete subDevelopments
-      await this.subDevelopmentModel.deleteMany({
-        $or: [
-          { masterDevelopment: id },
-          { masterDevelopment: masterDevId },
-        ],
-      }, { session });
-
-      // 6. Delete the masterDevelopment
-      await this.MasterDevelopmentModel.deleteOne({
-        $or: [
-          { _id: id },
-          { _id: masterDevId },
-        ],
-      }, { session });
-
-      await session.commitTransaction();
-    } catch (error) {
-      await session.abortTransaction();
-      console.error('Error during cascading delete of MasterDevelopment:', error);
-      throw new Error('Failed to delete MasterDevelopment and related data');
-    } finally {
-      session.endSession();
+    if (!development) {
+      throw new Error('MasterDevelopment not found');
     }
+
+    // Step 1: Remove customerId from MasterDevelopment.customers
+    const index = development.customers.findIndex((id: string) => id === customerId);
+
+    if (index !== -1) {
+      development.customers.splice(index, 1);
+      await development.save();
+    }
+
+    // Step 2: Remove masterDevelopment assignment from Customer.assigned
+    const customer = await this.customerModel.findById(customerId).exec();
+
+    if (!customer) {
+      throw new Error('Customer not found');
+    }
+
+    if (Array.isArray(customer.assigned)) {
+      customer.assigned = customer.assigned.filter(
+        (assignment) => !(assignment.id === masterDevelopmentId && assignment.name === 'masterDevelopment'),
+      );
+
+      await customer.save();
+    }
+
+    return development;
+  } catch (error) {
+    console.error('Error removing customer from MasterDevelopment:', error);
+    throw new Error('Failed to remove customer from MasterDevelopment');
   }
+}
+
+  async addCustomer(masterDevelopmentId: string, customerId: string): Promise<MasterDevelopment> {
+  try {
+    const development = await this.MasterDevelopmentModel.findById(masterDevelopmentId).exec();
+
+    if (!development) {
+      throw new Error('MasterDevelopment not found');
+    }
+
+    // Step 1: Add customerId to MasterDevelopment if not already present
+    if (!development.customers.includes(customerId)) {
+      development.customers.push(customerId);
+      await development.save();
+    }
+
+    // Step 2: Update the customer's `assigned` array
+    const customer = await this.customerModel.findById(customerId).exec();
+
+    if (!customer) {
+      throw new Error('Customer not found');
+    }
+
+    const alreadyAssigned = customer.assigned?.some(
+      (entry) => entry.id === masterDevelopmentId && entry.name === 'masterDevelopment'
+    );
+
+    if (!alreadyAssigned) {
+      const newAssignment = {
+        id: masterDevelopmentId,
+        name: 'masterDevelopment',
+        propertyName: development.developmentName,
+      };
+
+      if (!customer.assigned) {
+        customer.assigned = [newAssignment];
+      } else {
+        customer.assigned.push(newAssignment);
+      }
+
+      await customer.save();
+    }
+
+    return development;
+  } catch (error) {
+    console.error('Error adding customer to MasterDevelopment:', error);
+    throw new Error('Failed to add customer to MasterDevelopment');
+  }
+}
+
+
+
+ async delete(id: string): Promise<void> {
+  const session = await this.connection.startSession();
+  session.startTransaction();
+  try {
+    // Handle both string and ObjectId
+    const masterDevId = Types.ObjectId.isValid(id) ? new Types.ObjectId(id) : id;
+
+    // 1. Find all subDevelopments for this masterDevelopment
+    const subDevs = await this.subDevelopmentModel.find({
+      $or: [
+        { masterDevelopment: id },
+        { masterDevelopment: masterDevId },
+      ],
+    }, null, { session });
+    const subDevIds = subDevs.map((sd) => sd._id);
+
+    // 2. Find all projects for this masterDevelopment and subDevelopments
+    const projects = await this.ProjectModel.find({
+      $or: [
+        { masterDevelopment: id },
+        { masterDevelopment: masterDevId },
+        { subDevelopment: { $in: subDevIds } },
+      ],
+    }, null, { session });
+    const projectIds = projects.map((p) => p._id.toString());
+
+    // 3. Delete inventories linked to these projects
+    await this.InventoryModel.deleteMany({ project: { $in: projectIds } }, { session });
+
+    // 4. Delete projects
+    await this.ProjectModel.deleteMany({
+      $or: [
+        { masterDevelopment: id },
+        { masterDevelopment: masterDevId },
+        { subDevelopment: { $in: subDevIds } },
+      ],
+    }, { session });
+
+    // 5. Delete subDevelopments
+    await this.subDevelopmentModel.deleteMany({
+      $or: [
+        { masterDevelopment: id },
+        { masterDevelopment: masterDevId },
+      ],
+    }, { session });
+
+    const masterDev = await this.MasterDevelopmentModel.findById(masterDevId).session(session);
+    if (masterDev) {
+      const customerIds: string[] = masterDev.customers || [];
+
+      if (customerIds.length > 0) {
+        const customers = await this.customerModel.find({ _id: { $in: customerIds } }).session(session);
+
+        for (const customer of customers) {
+          if (Array.isArray(customer.assigned)) {
+            customer.assigned = customer.assigned.filter(
+              (entry) => !(entry.id === masterDevId.toString() && entry.name === 'masterDevelopment')
+            );
+            await customer.save({ session });
+          }
+        }
+      }
+    }
+
+    // 7. Delete the masterDevelopment
+    await this.MasterDevelopmentModel.deleteOne({
+      $or: [
+        { _id: id },
+        { _id: masterDevId },
+      ],
+    }, { session });
+
+    await session.commitTransaction();
+  } catch (error) {
+    await session.abortTransaction();
+    console.error('Error during cascading delete of MasterDevelopment:', error);
+    throw new Error('Failed to delete MasterDevelopment and related data');
+  } finally {
+    session.endSession();
+  }
+}
+
 
   async update(
     id: string,

@@ -11,7 +11,9 @@ import {
   Post,
   Query, 
   Req,
-  UploadedFile,
+  UploadedFile, 
+  HttpException, 
+  HttpStatus,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
@@ -137,5 +139,51 @@ async findOneWithCustomers(@Param('id') id: string) {
   } catch (error) {
     throw error;
   }
-}
+} 
+
+  @Delete(':inventoryId/customers/:customerId')
+  async removeCustomerFromMasterDevelopment(
+    @Param('inventoryId') masterDevelopmentId: string,
+    @Param('customerId') customerId: string,
+  ) {
+    try {
+      const updatedDevelopment = await this.inventoryService.removeCustomer(
+        masterDevelopmentId,
+        customerId,
+      );
+      return {
+        message: 'Customer removed successfully',
+        data: updatedDevelopment,
+      };
+    } catch (error) {
+      throw new HttpException(
+        error.message || 'Failed to remove customer',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+  } 
+
+  @Post(':inventoryId/customers/:customerId')
+  async addCustomerToMasterDevelopment(
+    @Param('inventoryId') masterDevelopmentId: string,
+    @Param('customerId') customerId: string,
+  ) {
+    try {
+      const updatedDevelopment =
+        await this.inventoryService.addCustomer(
+          masterDevelopmentId,
+          customerId,
+        );
+      return {
+        message: 'Customer added successfully',
+        data: updatedDevelopment,
+      };
+    } catch (error) {
+      throw new HttpException(
+        error.message || 'Failed to add customer',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+  }
+
 }

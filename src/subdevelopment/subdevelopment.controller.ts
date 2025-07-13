@@ -11,7 +11,9 @@ import {
   UseInterceptors,
   UploadedFile,
   UseGuards,
-  Req,
+  Req, 
+  HttpException,   
+  HttpStatus,
 } from '@nestjs/common';
 import { SubDevelopmentService } from './subdevelopment.service';
 import { CreateSubDevelopmentDto } from './dto/create-sub-development.dto';
@@ -82,7 +84,55 @@ export class SubDevelopmentController {
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.service.remove(id);
+  }  
+
+ @Delete(':subDevelopmentId/customers/:customerId')
+  async removeCustomerFromMasterDevelopment(
+    @Param('subDevelopmentId') masterDevelopmentId: string,
+    @Param('customerId') customerId: string,
+  ) {
+    try {
+      const updatedDevelopment = await this.service.removeCustomer(
+        masterDevelopmentId,
+        customerId,
+      );
+      return {
+        message: 'Customer removed successfully',
+        data: updatedDevelopment,
+      };
+    } catch (error) {
+      throw new HttpException(
+        error.message || 'Failed to remove customer',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
   } 
+
+  @Post(':subDevelopmentId/customers/:customerId')
+  async addCustomerToMasterDevelopment(
+    @Param('subDevelopmentId') masterDevelopmentId: string,
+    @Param('customerId') customerId: string,
+  ) {
+    try {
+      const updatedDevelopment =
+        await this.service.addCustomer(
+          masterDevelopmentId,
+          customerId,
+        );
+      return {
+        message: 'Customer added successfully',
+        data: updatedDevelopment,
+      };
+    } catch (error) {
+      throw new HttpException(
+        error.message || 'Failed to add customer',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+  }
+
+
+
 
     @Get('customerDetails/:id')
   @ApiOperation({ summary: 'Get inventory unit with customer details' })
