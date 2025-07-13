@@ -332,28 +332,7 @@ async getCustomersExcludingMasterDevCustomers(masterDevId: string): Promise<Cust
 
  async deleteCustomer(customerId: string) {
   // Convert to ObjectId if needed
-  const customerObjectId = new Types.ObjectId(customerId);
-
-  // Update all 4 schemas where the customer exists in customers array
-  await Promise.all([
-    this.projectModel.updateMany(
-      { customers: customerObjectId },
-      { $pull: { customers: customerObjectId } }
-    ),
-    this.inventoryModel.updateMany(
-      { customers: customerObjectId },
-      { $pull: { customers: customerObjectId } }
-    ),
-    this.subDevelopmentModel.updateMany(
-      { customers: customerObjectId },
-      { $pull: { customers: customerObjectId } }
-    ),
-    this.masterDevelopmentModel.updateMany(
-      { customers: customerObjectId },
-      { $pull: { customers: customerObjectId } }
-    ),
-  ]);
-
+  // const customerObjectId = new Types.ObjectId(customerId);
   // Now delete the customer
   const deleted = await this.customerModel.findByIdAndDelete(customerId);
 
